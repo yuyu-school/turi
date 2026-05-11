@@ -9,24 +9,77 @@
   body {
     background: #000;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
     overflow: hidden;
   }
+  #game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    height: 100vh;
+  }
   canvas {
     image-rendering: pixelated;
     image-rendering: crisp-edges;
+    flex: 1;
     max-width: 100vw;
-    max-height: 100vh;
+    max-height: 100vw;
     width: auto;
     height: auto;
     aspect-ratio: 1/1;
   }
+  #controls {
+    display: none;
+    width: 100%;
+    padding: 10px;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .ctrl-btn {
+    background: rgba(255,255,255,0.3);
+    border: 3px solid #fff;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 28px;
+    font-weight: bold;
+    padding: 20px 30px;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .ctrl-btn:active {
+    background: rgba(100,200,255,0.7);
+  }
+  #btn-fish {
+    background: rgba(255,150,50,0.5);
+    padding: 20px 40px;
+  }
+  #btn-fish:active {
+    background: rgba(255,200,100,0.8);
+  }
+  .dpad {
+    display: flex;
+    gap: 10px;
+  }
+  @media (max-aspect-ratio: 1/1) {
+    #controls { display: flex; }
+    canvas { max-height: calc(100vh - 100px); }
+  }
 </style>
 </head>
 <body>
+<div id="game-container">
 <canvas id="game" width="800" height="800"></canvas>
+<div id="controls">
+  <button class="ctrl-btn" id="btn-left">&lt;</button>
+  <button class="ctrl-btn" id="btn-fish">FISH</button>
+  <button class="ctrl-btn" id="btn-right">&gt;</button>
+</div>
+</div>
 <script>
 // ============================================================
 //  FISHING BATTLE — single-file canvas game
@@ -199,104 +252,49 @@ const gpState = [
   { prev: Array(17).fill(false) },
 ];
 
-// ── Touch input with virtual buttons ──────────────────────────
-let touchState = { left: false, right: false, fish: false };
-const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+// ── Touch input with HTML buttons ─────────────────────────────
+let touchState = { left: false, right: false };
 
-// Virtual button positions (in game coordinates)
-const vButtons = {
-  left:  { x: 40,  y: H - 100, w: 100, h: 80 },
-  right: { x: 150, y: H - 100, w: 100, h: 80 },
-  fish:  { x: W - 140, y: H - 100, w: 120, h: 80 },
-};
+// HTML button references
+const btnLeft = document.getElementById('btn-left');
+const btnRight = document.getElementById('btn-right');
+const btnFish = document.getElementById('btn-fish');
 
-function getTouchPos(touch) {
-  const rect = canvas.getBoundingClientRect();
-  return {
-    x: (touch.clientX - rect.left) * (W / rect.width),
-    y: (touch.clientY - rect.top) * (H / rect.height),
-  };
-}
-
-function isInButton(pos, btn) {
-  return pos.x >= btn.x && pos.x <= btn.x + btn.w &&
-         pos.y >= btn.y && pos.y <= btn.y + btn.h;
-}
-
-function updateTouchState(touches) {
+// Left button
+btnLeft.addEventListener('touchstart', e => {
+  e.preventDefault();
+  touchState.left = true;
+}, { passive: false });
+btnLeft.addEventListener('touchend', e => {
+  e.preventDefault();
   touchState.left = false;
+}, { passive: false });
+
+// Right button
+btnRight.addEventListener('touchstart', e => {
+  e.preventDefault();
+  touchState.right = true;
+}, { passive: false });
+btnRight.addEventListener('touchend', e => {
+  e.preventDefault();
   touchState.right = false;
-  let fishPressed = false;
-  for (let i = 0; i < touches.length; i++) {
-    const pos = getTouchPos(touches[i]);
-    if (isInButton(pos, vButtons.left)) touchState.left = true;
-    if (isInButton(pos, vButtons.right)) touchState.right = true;
-    if (isInButton(pos, vButtons.fish)) fishPressed = true;
-  }
-  return fishPressed;
-}
+}, { passive: false });
 
-let fishBtnWasPressed = false;
+// Fish button
+btnFish.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (game.state === 'play') toggleHook(0);
+}, { passive: false });
 
+// Canvas touch for title/result screens
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
   if (game.state === 'title') {
     startGame('1p');
-    return;
-  }
-  if (game.state === 'result') {
+  } else if (game.state === 'result') {
     resetGame();
-    return;
   }
-  const fishPressed = updateTouchState(e.touches);
-  if (fishPressed && !fishBtnWasPressed && game.state === 'play') {
-    toggleHook(0);
-  }
-  fishBtnWasPressed = fishPressed;
 }, { passive: false });
-
-canvas.addEventListener('touchmove', e => {
-  e.preventDefault();
-  const fishPressed = updateTouchState(e.touches);
-  if (fishPressed && !fishBtnWasPressed && game.state === 'play') {
-    toggleHook(0);
-  }
-  fishBtnWasPressed = fishPressed;
-}, { passive: false });
-
-canvas.addEventListener('touchend', e => {
-  e.preventDefault();
-  const fishPressed = updateTouchState(e.touches);
-  fishBtnWasPressed = fishPressed;
-}, { passive: false });
-
-function drawVirtualButtons() {
-  if (!isMobile) return;
-
-  const alpha = 0.5;
-
-  // Left button
-  ctx.fillStyle = touchState.left ? 'rgba(100,200,255,0.7)' : `rgba(255,255,255,${alpha})`;
-  ctx.fillRect(vButtons.left.x, vButtons.left.y, vButtons.left.w, vButtons.left.h);
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth = 3;
-  ctx.strokeRect(vButtons.left.x, vButtons.left.y, vButtons.left.w, vButtons.left.h);
-  drawPixelText('<', vButtons.left.x + 40, vButtons.left.y + 28, 3, '#000', 'center');
-
-  // Right button
-  ctx.fillStyle = touchState.right ? 'rgba(100,200,255,0.7)' : `rgba(255,255,255,${alpha})`;
-  ctx.fillRect(vButtons.right.x, vButtons.right.y, vButtons.right.w, vButtons.right.h);
-  ctx.strokeStyle = '#fff';
-  ctx.strokeRect(vButtons.right.x, vButtons.right.y, vButtons.right.w, vButtons.right.h);
-  drawPixelText('>', vButtons.right.x + 60, vButtons.right.y + 28, 3, '#000', 'center');
-
-  // Fish button
-  ctx.fillStyle = fishBtnWasPressed ? 'rgba(255,200,100,0.7)' : `rgba(255,150,50,${alpha})`;
-  ctx.fillRect(vButtons.fish.x, vButtons.fish.y, vButtons.fish.w, vButtons.fish.h);
-  ctx.strokeStyle = '#fff';
-  ctx.strokeRect(vButtons.fish.x, vButtons.fish.y, vButtons.fish.w, vButtons.fish.h);
-  drawPixelText('FISH', vButtons.fish.x + 60, vButtons.fish.y + 28, 2, '#000', 'center');
-}
 
 function pollGamepads() {
   const gps = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -1401,7 +1399,8 @@ function drawResult() {
 }
 
 // ── Countdown screen ──────────────────────────────────────────
-let countdownTimer = 0;
+let countdownFrame = 0;
+const FRAMES_PER_COUNT = 60; // 1 second at 60fps
 
 function drawCountdown() {
   drawSky();
@@ -1415,10 +1414,10 @@ function drawCountdown() {
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
   ctx.fillRect(0, 0, W, H);
 
-  // Countdown number
-  countdownTimer += dt;
-  if (countdownTimer >= 1) {
-    countdownTimer = 0;
+  // Countdown logic
+  countdownFrame++;
+  if (countdownFrame >= FRAMES_PER_COUNT) {
+    countdownFrame = 0;
     game.countdown--;
     beep(game.countdown > 0 ? 440 : 880, 0.15, 'square', 0.2);
     if (game.countdown <= 0) {
@@ -1430,7 +1429,8 @@ function drawCountdown() {
   }
 
   const num = String(game.countdown);
-  const scale = 12 + Math.sin(countdownTimer * Math.PI) * 3;
+  const progress = countdownFrame / FRAMES_PER_COUNT;
+  const scale = 12 + Math.sin(progress * Math.PI) * 3;
   const flash = Math.floor(totalFrames / 5) % 2 === 0;
   drawPixelText(num, W/2, H/2 - 50, Math.floor(scale), flash ? C.yellow : C.white, 'center');
 
@@ -1456,7 +1456,7 @@ function startGame(mode) {
   game.state = 'countdown';
   game.mode = mode || '2p';
   game.countdown = 3;
-  countdownTimer = 0;
+  countdownFrame = 0;
   creatures = [];
   crabs = [];
   crabs = [
@@ -1589,9 +1589,6 @@ function gameLoop(ts) {
 
   // Draw UI on top
   drawUI();
-
-  // Draw virtual buttons for mobile
-  drawVirtualButtons();
 
   // Combo flash
   for (const p of players) {
