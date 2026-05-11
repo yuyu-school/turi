@@ -199,6 +199,43 @@ const gpState = [
   { prev: Array(17).fill(false) },
 ];
 
+// ── Touch input ───────────────────────────────────────────────
+let touchState = { active: false, x: 0, startTime: 0 };
+
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = W / rect.width;
+  touchState.active = true;
+  touchState.x = (touch.clientX - rect.left) * scaleX;
+  touchState.startTime = performance.now();
+
+  if (game.state === 'title') {
+    startGame('1p');
+  } else if (game.state === 'result') {
+    resetGame();
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = W / rect.width;
+  touchState.x = (touch.clientX - rect.left) * scaleX;
+}, { passive: false });
+
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  const duration = performance.now() - touchState.startTime;
+  // Short tap = toggle hook
+  if (duration < 200 && game.state === 'play') {
+    toggleHook(0);
+  }
+  touchState.active = false;
+}, { passive: false });
+
 function pollGamepads() {
   const gps = navigator.getGamepads ? navigator.getGamepads() : [];
   let gpIdx = 0;
@@ -271,15 +308,15 @@ const ROD_P1 = { x: 80,  y: WATER_TOP };
 const ROD_P2 = { x: W-80, y: WATER_TOP };
 
 // Speeds in pixels per second (60fps equivalent)
-const BASE_ASCENT = 60;
-const BASE_DESCENT = 42;
-const WEIGHT_FACTOR = 0.6;
-const MIN_ASCENT = 48;
-const MAX_DESCENT = 78;
-const ROD_SPEED = 78; // horizontal movement speed
+const BASE_ASCENT = 120;
+const BASE_DESCENT = 84;
+const WEIGHT_FACTOR = 1.2;
+const MIN_ASCENT = 96;
+const MAX_DESCENT = 156;
+const ROD_SPEED = 156; // horizontal movement speed
 
 // ── Game State ────────────────────────────────────────────────
-let game = { state: 'title', mode: '2p' };
+let game = { state: 'title', mode: '2p', countdown: 0 };
 let creatures = [];
 let crabs = [];
 let players = [];
@@ -537,7 +574,7 @@ function spawnWave() {
 
     // Initial upward velocity based on type
     if (type === 'fish') {
-      f.vy = -(1.3 + Math.random() * 0.975);
+      f.vy = -(1.3 + Math.random() * 0.8775);
     } else if (type === 'squid') {
       f.vy = -(1.625 + Math.random() * 1.3);
     }
@@ -1299,6 +1336,44 @@ function drawResult() {
   drawPixelText('1P: A/D MOVE  S FISH   2P: J/L MOVE  K FISH   SPACE TO RETRY', W/2, 445, 1, '#666', 'center');
 }
 
+// ── Countdown screen ──────────────────────────────────────────
+let countdownTimer = 0;
+
+function drawCountdown() {
+  drawSky();
+  drawWater(totalFrames);
+  drawGround();
+
+  // Draw players ready
+  for (const p of players) drawRod(p);
+
+  // Dark overlay
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(0, 0, W, H);
+
+  // Countdown number
+  countdownTimer += dt;
+  if (countdownTimer >= 1) {
+    countdownTimer = 0;
+    game.countdown--;
+    beep(game.countdown > 0 ? 440 : 880, 0.15, 'square', 0.2);
+    if (game.countdown <= 0) {
+      game.state = 'play';
+      soundStart();
+      spawnWave();
+      return;
+    }
+  }
+
+  const num = String(game.countdown);
+  const scale = 12 + Math.sin(countdownTimer * Math.PI) * 3;
+  const flash = Math.floor(totalFrames / 5) % 2 === 0;
+  drawPixelText(num, W/2, H/2 - 50, Math.floor(scale), flash ? C.yellow : C.white, 'center');
+
+  // "READY" text
+  drawPixelText('READY', W/2, H/2 + 80, 4, C.green, 'center');
+}
+
 // ── Game init & reset ─────────────────────────────────────────
 function resetGame() {
   game.state = 'title';
@@ -1314,15 +1389,17 @@ function resetGame() {
 
 function startGame(mode) {
   if (audio && audio.state === 'suspended') audio.resume();
-  game.state = 'play';
+  game.state = 'countdown';
   game.mode = mode || '2p';
+  game.countdown = 3;
+  countdownTimer = 0;
   creatures = [];
   crabs = [];
   crabs = [
-    { x: Math.random() * W, y: WATER_TOP + 80, vx: Math.random() < 0.5 ? 0.975 : -0.975, alive: true, stunTimer: 0 },
-    { x: Math.random() * W, y: WATER_TOP + 240, vx: Math.random() < 0.5 ? 0.975 : -0.975, alive: true, stunTimer: 0 },
-    { x: Math.random() * W, y: WATER_TOP + 400, vx: Math.random() < 0.5 ? 0.975 : -0.975, alive: true, stunTimer: 0 },
-    { x: Math.random() * W, y: GROUND_TOP - 60, vx: Math.random() < 0.5 ? 0.975 : -0.975, alive: true, stunTimer: 0 },
+    { x: Math.random() * W, y: WATER_TOP + 80, vx: Math.random() < 0.5 ? 0.8775 : -0.8775, alive: true, stunTimer: 0 },
+    { x: Math.random() * W, y: WATER_TOP + 240, vx: Math.random() < 0.5 ? 0.8775 : -0.8775, alive: true, stunTimer: 0 },
+    { x: Math.random() * W, y: WATER_TOP + 400, vx: Math.random() < 0.5 ? 0.8775 : -0.8775, alive: true, stunTimer: 0 },
+    { x: Math.random() * W, y: GROUND_TOP - 60, vx: Math.random() < 0.5 ? 0.8775 : -0.8775, alive: true, stunTimer: 0 },
   ];
   players = [createPlayer(0), createPlayer(1)];
   elapsed = 0;
@@ -1331,9 +1408,6 @@ function startGame(mode) {
   maxCreatures = 15;
   // Initialize AI timer for 1P mode
   if (game.mode === '1p') resetAiTimer();
-  soundStart();
-  // Initial wave
-  spawnWave();
 }
 
 // ── Main loop ─────────────────────────────────────────────────
@@ -1357,6 +1431,11 @@ function gameLoop(ts) {
 
   if (game.state === 'result') {
     drawResult();
+    return;
+  }
+
+  if (game.state === 'countdown') {
+    drawCountdown();
     return;
   }
 
@@ -1395,6 +1474,14 @@ function gameLoop(ts) {
     if (p0.stunTimer <= 0) {
       if (keys['KeyA']) p0.rodX = Math.max(40,     p0.rodX - ROD_SPEED * dt);
       if (keys['KeyD']) p0.rodX = Math.min(W - 40, p0.rodX + ROD_SPEED * dt);
+      // Touch movement (1P only)
+      if (touchState.active) {
+        if (touchState.x < W / 2) {
+          p0.rodX = Math.max(40, p0.rodX - ROD_SPEED * dt);
+        } else {
+          p0.rodX = Math.min(W - 40, p0.rodX + ROD_SPEED * dt);
+        }
+      }
     }
   }
   if (game.mode === '2p') {
