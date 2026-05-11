@@ -1,13 +1,1463 @@
-<!doctype html>
-<html lang=en>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta charset=UTF-8>
-<meta name=viewport content="width=device-width,initial-scale=1">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FISHING BATTLE</title>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#000;display:flex;justify-content:center;align-items:center;min-height:100vh;overflow:hidden}canvas{image-rendering:pixelated;image-rendering:crisp-edges;max-width:100vw;max-height:100vh;width:auto;height:auto;aspect-ratio:1/1}</style>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+  canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    max-width: 100vw;
+    max-height: 100vh;
+    width: auto;
+    height: auto;
+    aspect-ratio: 1/1;
+  }
+</style>
 </head>
 <body>
-<canvas id=game width=800 height=800></canvas>
-<script>const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");ctx.imageSmoothingEnabled=!1;const W=800,H=800,C={sky:"#0a0a1a",water:"#0d2b45",waterLight:"#1a3f5c",waterDeep:"#081828",ground:"#5c3a1e",groundLight:"#7a4e2d",sand:"#c8a265",white:"#ffffff",black:"#000000",p1:"#4af",p2:"#f84",red:"#e33",green:"#3e3",yellow:"#fe3",orange:"#f83",pink:"#f5a",purple:"#a5f",brown:"#8B5e3c",metal:"#aaa",darkMetal:"#666",ruby:"#e02020",rubyShine:"#ff6060",squidPink:"#e060b0",squidDark:"#802080",fishOrange:"#f86020",fishBlue:"#2080f8",crabRed:"#e02828",lineColor:"#ddd"},AudioCtx=window.AudioContext||window.webkitAudioContext;let audio;try{audio=new AudioCtx}catch(e){}function beep(e,t,a="square",r=.15){if(audio)try{const o=audio.createOscillator(),i=audio.createGain();o.connect(i),i.connect(audio.destination),o.type=a,o.frequency.setValueAtTime(e,audio.currentTime),i.gain.setValueAtTime(r,audio.currentTime),i.gain.exponentialRampToValueAtTime(.001,audio.currentTime+t),o.start(audio.currentTime),o.stop(audio.currentTime+t)}catch(e){}}function soundCatch(){if(audio)try{const e=audio.createOscillator(),t=audio.createGain();e.connect(t),t.connect(audio.destination),e.type="square",e.frequency.setValueAtTime(600,audio.currentTime),e.frequency.linearRampToValueAtTime(1200,audio.currentTime+.08),t.gain.setValueAtTime(.2,audio.currentTime),t.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.15),e.start(audio.currentTime),e.stop(audio.currentTime+.15)}catch(e){}}function soundMultiCatch(e){if(audio)try{const t=[523,659,784,1047],a=Math.min(e,t.length);for(let e=0;e<a;e++){const a=audio.createOscillator(),r=audio.createGain();a.connect(r),r.connect(audio.destination),a.type="square";const o=audio.currentTime+.1*e;a.frequency.setValueAtTime(t[e],o),r.gain.setValueAtTime(.18,o),r.gain.exponentialRampToValueAtTime(.001,o+.2),a.start(o),a.stop(o+.2)}if(e>=3){const e=audio.createOscillator(),t=audio.createGain();e.connect(t),t.connect(audio.destination),e.type="sine";const r=audio.currentTime+.1*a;e.frequency.setValueAtTime(1568,r),e.frequency.linearRampToValueAtTime(2093,r+.3),t.gain.setValueAtTime(.12,r),t.gain.exponentialRampToValueAtTime(.001,r+.4),e.start(r),e.stop(r+.4)}}catch(e){}}function soundCut(){if(audio)try{const e=audio.createOscillator(),t=audio.createGain();e.connect(t),t.connect(audio.destination),e.type="sawtooth",e.frequency.setValueAtTime(300,audio.currentTime),e.frequency.linearRampToValueAtTime(50,audio.currentTime+.15),t.gain.setValueAtTime(.3,audio.currentTime),t.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.15),e.start(audio.currentTime),e.stop(audio.currentTime+.15);const a=audio.createOscillator(),r=audio.createGain();a.connect(r),r.connect(audio.destination),a.type="square",a.frequency.setValueAtTime(440,audio.currentTime+.1),a.frequency.linearRampToValueAtTime(110,audio.currentTime+.5),r.gain.setValueAtTime(.2,audio.currentTime+.1),r.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.5),a.start(audio.currentTime+.1),a.stop(audio.currentTime+.5);const o=audio.createOscillator(),i=audio.createGain();o.connect(i),i.connect(audio.destination),o.type="triangle",o.frequency.setValueAtTime(80,audio.currentTime+.1),i.gain.setValueAtTime(.15,audio.currentTime+.1),i.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.6),o.start(audio.currentTime+.1),o.stop(audio.currentTime+.6)}catch(e){}}function soundReel(){beep(330,.05,"square",.08)}function soundGameOver(){[440,330,220,110].forEach(((e,t)=>setTimeout((()=>beep(e,.3,"square",.15)),200*t)))}function soundStart(){[220,330,440,550,660].forEach(((e,t)=>setTimeout((()=>beep(e,.1,"square",.12)),80*t)))}const keys={};document.addEventListener("keydown",(e=>{keys[e.code]||(keys[e.code]=!0,handleKeyPress(e.code))})),document.addEventListener("keyup",(e=>{keys[e.code]=!1}));const gpState=[{prev:Array(17).fill(!1)},{prev:Array(17).fill(!1)}];function pollGamepads(){const e=navigator.getGamepads?navigator.getGamepads():[];let t=0;for(let a=0;a<e.length&&t<2;a++){const r=e[a];if(!r)continue;const o=gpState[t];for(let e=0;e<r.buttons.length;e++){const a=r.buttons[e].pressed;a&&!o.prev[e]&&handleGamepadPress(t,e),o.prev[e]=a}if("play"===game.state){const e=r.axes[0]||0;if(!("1p"===game.mode&&1===t)){const a=players[t];if(a&&a.stunTimer<=0){const[t,o]=[40,760];(e<-.3||r.buttons[14]&&r.buttons[14].pressed)&&(a.rodX=Math.max(t,a.rodX-1.3)),(e>.3||r.buttons[15]&&r.buttons[15].pressed)&&(a.rodX=Math.min(o,a.rodX+1.3))}}}t++}}function handleKeyPress(e){if("title"===game.state)return"KeyS"===e?void startGame("1p"):void startGame("2p");"result"!==game.state?"play"===game.state&&("KeyS"===e&&toggleHook(0),"KeyK"===e&&toggleHook(1)):"Space"===e&&resetGame()}function handleGamepadPress(e,t){if("title"!==game.state){if("result"!==game.state&&"play"===game.state){if("1p"===game.mode&&1===e)return;toggleHook(e)}}else startGame("2p")}const WATER_TOP=120,GROUND_TOP=740,ROD_P1={x:80,y:120},ROD_P2={x:720,y:120},BASE_ASCENT=1,BASE_DESCENT=.7,WEIGHT_FACTOR=.01,MIN_ASCENT=.8,MAX_DESCENT=1.3;let game={state:"title",mode:"2p"},creatures=[],crabs=[],players=[],waveTick=0,waveInterval=180,elapsed=0,totalFrames=0,titleBgFish=[],maxCreatures=15,aiTimer=0,aiToggleInterval=0,rubySpawnTimes=[15,35,55,75],rubySpawnIndex=0;const rubySpawnX=[160,560,320,640];function px(e,t,a,r,o){ctx.fillStyle=o,ctx.fillRect(Math.floor(e),Math.floor(t),a,r)}function drawSprite(e,t,a,r,o=2){const i=o;for(let o=0;o<e.length;o++)for(let n=0;n<e[o].length;n++){const l=e[o][n];"."!==l&&" "!==l&&(ctx.fillStyle=t[l]||"#fff",ctx.fillRect(Math.floor(a+n*i),Math.floor(r+o*i),i,i))}}const FISH_SPRITE=["..BBB...",".BBBBB..","BBBBBBOB","BBBBBWOB","BBBBBBOB",".BBBBB..","..BBB...","........"],FISH_PAL={B:C.fishOrange,O:"#000",W:"#fff"},FISH2_SPRITE=["..222...",".22222..","222222O2","222222WO","222222O2",".22222..","..222...","........"],FISH2_PAL={2:C.fishBlue,O:"#000",W:"#fff"},SQUID_SPRITE=["..SSS...",".SSSSS..","SSSSSSS.","SWSSSWS.",".SSSSS..","..SSS...",".S.S.S..","S..S..S."],SQUID_PAL={S:C.squidPink,W:"#fff"},RUBY_SPRITE=["..RRR...",".RRRRR..","RRRRRRR.","RRRRRRR.",".RRRRR..","..RRR...","...R....","........"],RUBY_PAL_BASE={R:C.ruby},RUBY_PAL_SHINE={R:C.rubyShine},CRAB_SPRITE=["C.CCC.C.",".CCCCC..","CCCCCCC.","CWCCCWC.",".CCCCC..","C.CCC.C.",".C...C..","........"],CRAB_PAL={C:C.crabRed,W:"#fff"},PERSON_SPRITE=["..HH....",".HFFH...",".HFFH...","..HH....",".BBBB...","..BB.R..",".B..B...",".L..L..."],PERSON1_PAL={H:"#4a3020",F:"#ffcc88",B:"#4488ff",R:"#8B5e3c",L:"#335599"},PERSON2_PAL={H:"#4a3020",F:"#ffcc88",B:"#ff6644",R:"#8B5e3c",L:"#cc4422"},HOOK_SPRITE=[".HH.","H..H","...H","...H","..HH",".H..","....","...."],HOOK_PAL={H:C.metal},RAFT_SPRITE=["LLLLLLLLLLLL","WLWLWLWLWLWL","LLLLLLLLLLLL","W.WW..WW..WW"],RAFT_PAL={L:"#8B5e3c",W:"#6a4020"},PFONT={A:["01110","10001","10001","11111","10001","10001","10001"],B:["11110","10001","10001","11110","10001","10001","11110"],C:["01111","10000","10000","10000","10000","10000","01111"],D:["11110","10001","10001","10001","10001","10001","11110"],E:["11111","10000","10000","11110","10000","10000","11111"],F:["11111","10000","10000","11110","10000","10000","10000"],G:["01111","10000","10000","10011","10001","10001","01111"],H:["10001","10001","10001","11111","10001","10001","10001"],I:["11111","00100","00100","00100","00100","00100","11111"],J:["11111","00010","00010","00010","00010","10010","01100"],K:["10001","10010","10100","11000","10100","10010","10001"],L:["10000","10000","10000","10000","10000","10000","11111"],M:["10001","11011","10101","10001","10001","10001","10001"],N:["10001","11001","10101","10011","10001","10001","10001"],O:["01110","10001","10001","10001","10001","10001","01110"],P:["11110","10001","10001","11110","10000","10000","10000"],Q:["01110","10001","10001","10001","10101","10010","01101"],R:["11110","10001","10001","11110","10100","10010","10001"],S:["01111","10000","10000","01110","00001","00001","11110"],T:["11111","00100","00100","00100","00100","00100","00100"],U:["10001","10001","10001","10001","10001","10001","01110"],V:["10001","10001","10001","10001","10001","01010","00100"],W:["10001","10001","10001","10101","10101","11011","10001"],X:["10001","01010","01010","00100","01010","01010","10001"],Y:["10001","10001","01010","00100","00100","00100","00100"],Z:["11111","00001","00010","00100","01000","10000","11111"],0:["01110","10001","10011","10101","11001","10001","01110"],1:["00100","01100","00100","00100","00100","00100","01110"],2:["01110","10001","00001","00010","00100","01000","11111"],3:["11111","00010","00100","00110","00001","10001","01110"],4:["00010","00110","01010","10010","11111","00010","00010"],5:["11111","10000","10000","11110","00001","00001","11110"],6:["00110","01000","10000","11110","10001","10001","01110"],7:["11111","00001","00010","00100","01000","01000","01000"],8:["01110","10001","10001","01110","10001","10001","01110"],9:["01110","10001","10001","01111","00001","00010","01100"]," ":["00000","00000","00000","00000","00000","00000","00000"],":":["00000","00100","00100","00000","00100","00100","00000"],"!":["00100","00100","00100","00100","00100","00000","00100"],"-":["00000","00000","00000","11111","00000","00000","00000"],"/":["00001","00010","00010","00100","01000","01000","10000"],".":["00000","00000","00000","00000","00000","00100","00100"]};function drawPixelText(e,t,a,r=2,o="#fff",i="left"){const n=e.toUpperCase().split(""),l=6*r,c=n.length*l;let s=t;"center"===i&&(s=t-c/2),"right"===i&&(s=t-c),n.forEach(((e,t)=>{const i=PFONT[e];if(!i)return;const n=s+t*l;i.forEach(((e,t)=>{for(let i=0;i<e.length;i++)"1"===e[i]&&(ctx.fillStyle=o,ctx.fillRect(Math.floor(n+i*r),Math.floor(a+t*r),r,r))}))}))}function createFish(e,t,a){const r=Math.random()<.5?1:-1,o=.4+.6*Math.random();return{id:Math.random(),type:a,x:e,y:t,vx:r*o*("ruby"===a?.2:1),vy:0,wobbleT:Math.random()*Math.PI*2,pulseT:0,caught:!1,caughtBy:-1,scattered:!1,scatterVx:0,scatterVy:0,alive:!0,frame:0,variant:Math.random()<.5?0:1}}function spawnWave(){const e=creatures.filter((e=>e.alive&&!e.caught)).length;if(e>=maxCreatures)return;const t=maxCreatures-e,a=Math.floor(1+elapsed/30),r=Math.min(a+2,t);if(!(r<=0))for(let e=0;e<r;e++){let e;e=Math.random()<.3?"squid":"fish";const t=createFish(720*Math.random()+40,700,e);t.vx=.78*(Math.random()-.5),"fish"===e?t.vy=-(1.3+.975*Math.random()):"squid"===e&&(t.vy=-(1.625+1.3*Math.random())),creatures.push(t)}}function createPlayer(e){const t=0===e?ROD_P1.x:ROD_P2.x,a=0===e?ROD_P1.y:ROD_P2.y;return{idx:e,rodX:t,rodY:a,hookX:t,hookY:a+10,hookDown:!0,score:0,maxCombo:0,caughtFish:[],lineCut:!1,cutFlash:0,stunTimer:0}}function toggleHook(e){const t=players[e];if(!(t.stunTimer>0)){if(t.lineCut)return t.lineCut=!1,t.hookDown=!0,t.hookY=t.rodY+10,t.caughtFish=[],void soundReel();t.hookDown=!t.hookDown,t.hookDown||soundReel()}}function hookWeight(e){return e.caughtFish.reduce(((e,t)=>"fish"===t.type?e+1:"squid"===t.type?e+10:"ruby"===t.type?e+100:e),0)}function hookAscentSpeed(e){const t=hookWeight(e);return Math.max(.8,1-.01*t)}function hookDescentSpeed(e){const t=hookWeight(e);return Math.min(1.3,.7+.01*t)}function updateHook(e){if(e.lineCut)return;if(e.hookDown)e.hookY+=hookDescentSpeed(e),e.hookY>=730&&(e.hookY=730,e.hookDown=!1);else if(e.hookY-=hookAscentSpeed(e),e.hookY<=e.rodY+10&&(e.hookY=e.rodY+10,e.caughtFish.length>0)){const t=e.caughtFish.length;t>e.maxCombo&&(e.maxCombo=t);const a=e.caughtFish.reduce(((e,t)=>e+fishScore(t.type)),0);e.score+=a,e.caughtFish.forEach((e=>{e.alive=!1})),e.caughtFish=[],soundMultiCatch(t)}const t=0===e.idx?1:-1;e.hookX=e.rodX+14*t;for(const t of creatures){if(!t.alive||t.caught)continue;const a=t.x-e.hookX,r=t.y-e.hookY;Math.sqrt(a*a+r*r)<("ruby"===t.type?34:"squid"===t.type?38:30)&&(t.caught=!0,t.caughtBy=e.idx,e.caughtFish.push(t),soundCatch())}}function fishScore(e){return"ruby"===e?100:"squid"===e?10:1}function resetAiTimer(){aiToggleInterval=Math.floor(60*(2+2*Math.random())),aiTimer=aiToggleInterval}function updateAI(){const e=players[1];if(e.lineCut)return resetAiTimer(),void toggleHook(1);const t=creatures.filter((e=>e.alive&&!e.caught));if(t.length>0){let a=t[0],r=Math.abs(t[0].x-e.rodX);for(const o of t){const t=Math.abs(o.x-e.rodX);t<r&&(r=t,a=o)}const o=40,i=760,n=.52;a.x<e.rodX-10?e.rodX=Math.max(o,e.rodX-n):a.x>e.rodX+10&&(e.rodX=Math.min(i,e.rodX+n))}aiTimer--,aiTimer<=0&&(toggleHook(1),resetAiTimer())}function checkCrabCutLines(){for(const e of crabs)if(e.alive)for(const t of players){if(t.lineCut)continue;const a=t.hookX,r=t.rodY,o=t.hookY;Math.abs(e.x-a)<22&&e.y+10>=r&&e.y<=o&&(cutLine(t),e.stunTimer=120)}}function cutLine(e){e.lineCut=!0,e.hookDown=!1,e.cutFlash=30,e.stunTimer=120,soundCut(),e.caughtFish.forEach((e=>{if(e.caught=!1,e.caughtBy=-1,e.scattered=!0,"ruby"===e.type)e.vx=0,e.vy=3;else if("squid"===e.type){const t=Math.random()<.5?-1:1;e.vx=t*(2+2*Math.random()),e.vy=-2-2*Math.random(),e.pulseT=0}else e.vx=4*(Math.random()-.5),e.vy=4*(Math.random()-.5)})),e.caughtFish=[]}function updateCreatures(){for(const e of creatures)if(e.alive)if(e.caught){const t=players[e.caughtBy];if(!t||t.lineCut)e.caught=!1,e.caughtBy=-1;else{const a=t.caughtFish.indexOf(e);e.x=t.hookX,e.y=Math.max(130,t.hookY-20*(a+1))}}else if(e.frame++,e.wobbleT+=.05,e.pulseT+=.08,e.scattered)if("ruby"===e.type)e.vy+=.1,e.vy=Math.min(e.vy,5),e.y+=e.vy,e.y>=732&&(e.y=732,e.vy=0,e.scattered=!1,e.vx=0,e.vy=0),e.x<=0&&(e.x=0,e.vx=Math.abs(e.vx)),e.x>=W&&(e.x=W,e.vx=-Math.abs(e.vx));else if("squid"===e.type){const t=.5*Math.sin(e.pulseT);e.x+=e.vx+t,e.y+=e.vy,e.vx*=.97,e.vy*=.97,e.y<125&&(e.y=125,e.vy=Math.abs(e.vy)),e.y>728&&(e.y=728,e.vy=-Math.abs(e.vy)),e.x<=0&&(e.x=0,e.vx=Math.abs(e.vx)),e.x>=W&&(e.x=W,e.vx=-Math.abs(e.vx)),Math.abs(e.vx)<.1&&Math.abs(e.vy)<.1&&(e.scattered=!1)}else e.x+=e.vx,e.y+=e.vy,e.vy+=.05,e.y<125&&(e.y=125,e.vy=.5*Math.abs(e.vy)),e.y>730&&(e.y=730,e.vy=.4*-Math.abs(e.vy),e.vx*=.95),e.x<=0&&(e.x=0,e.vx=Math.abs(e.vx)),e.x>=W&&(e.x=W,e.vx=-Math.abs(e.vx)),Math.abs(e.vx)<.05&&Math.abs(e.vy)<.05&&(e.scattered=!1);else if("fish"===e.type)e.x+=e.vx,e.y+=e.vy,e.y+=.3*Math.sin(e.wobbleT),e.y<=130&&(e.y=130,e.vy=.5*Math.abs(e.vy)),e.y>=710&&(e.y=710,e.vy=.5*-Math.abs(e.vy)),e.vy+=.02*(Math.random()-.55),e.x<=0&&(e.x=0,e.vx=Math.abs(e.vx)),e.x>=W&&(e.x=W,e.vx=-Math.abs(e.vx));else if("squid"===e.type){const t=Math.abs(Math.sin(e.pulseT));e.x+=e.vx*(.325+.455*t),e.y+=e.vy,e.y+=.15*Math.sin(.5*e.wobbleT),e.vy+=.03*(Math.random()-.55),e.y<=130&&(e.y=130,e.vy=.8*Math.abs(e.vy)),e.y>=710&&(e.y=710,e.vy=.8*-Math.abs(e.vy)),e.x<=0&&(e.x=0,e.vx=Math.abs(e.vx)),e.x>=W&&(e.x=W,e.vx=-Math.abs(e.vx))}else e.type;creatures=creatures.filter((e=>e.alive))}function updateCrabs(){for(const e of crabs)e.alive&&(e.stunTimer>0?e.stunTimer--:(e.x+=e.vx,e.x<=0&&(e.x=0,e.vx=Math.abs(e.vx)),e.x>=W&&(e.x=W,e.vx=-Math.abs(e.vx))));crabs=crabs.filter((e=>e.alive))}let waveFrame=0;function drawWater(e){ctx.fillStyle=C.waterDeep,ctx.fillRect(0,120,W,620);for(let t=0;t<5;t++){const a=128+25*t+3*Math.sin(.02*e+t);ctx.fillStyle=0===t?C.waterLight:C.water,ctx.fillRect(0,a,W,2);for(let r=0;r<W;r+=16){const o=3*Math.sin(.03*e+.04*r+t);ctx.fillRect(r,a+o,8,2)}}}function drawGround(){ctx.fillStyle=C.ground,ctx.fillRect(0,740,W,60),ctx.fillStyle=C.sand,ctx.fillRect(0,740,W,6);for(let e=0;e<W;e+=8)ctx.fillStyle=Math.floor(e/8)%2==0?C.groundLight:C.ground,ctx.fillRect(e,746,8,4);for(let e=30;e<W;e+=70)ctx.fillStyle="#3a2a1a",ctx.fillRect(e,748,12,6),ctx.fillStyle="#6a4a2a",ctx.fillRect(e+2,748,4,3)}function drawSky(){ctx.fillStyle=C.sky,ctx.fillRect(0,0,W,120),ctx.fillStyle="#fff";const e=[13,47,83,127,211,293,317,401,457,503];for(let t=0;t<e.length;t++){const a=97*e[t]%W,r=53*e[t]%110;ctx.fillRect(a,r,2,2)}ctx.fillStyle="#3a6a8a",ctx.fillRect(0,120,W,8),ctx.fillStyle="#5a8aaa",ctx.fillRect(0,120,W,3)}function drawRod(e){const t=0===e.idx,a=t?PERSON1_PAL:PERSON2_PAL,r=t?1:-1,o=2*Math.sin(.03*totalFrames+e.idx*Math.PI),i=e.rodX-24;drawSprite(RAFT_SPRITE,RAFT_PAL,i,112+o,4);const n=e.rodX-24,l=64+o;e.stunTimer>0&&Math.floor(totalFrames/10)%2==0||drawSprite(PERSON_SPRITE,a,n,l,6);const c=e.rodX+14*r,s=100+o;e.stunTimer>0&&Math.floor(totalFrames/10)%2==0||(ctx.fillStyle="#8B5e3c",ctx.fillRect(c-2,s,4,24),ctx.fillStyle="#c8a265",ctx.fillRect(c-2,s+22,4,5));const u=s+27;e.lineCut?e.cutFlash>0&&(ctx.fillStyle="#f00",ctx.fillRect(c-1,u,2,20)):(ctx.fillStyle=e.cutFlash>0&&e.cutFlash%4<2?"#f00":"#ddd",ctx.fillRect(c-1,u,2,e.hookY-u)),e.cutFlash>0&&e.cutFlash--,e.stunTimer>0&&Math.floor(totalFrames/8)%2==0&&drawPixelText("STUN!",e.rodX,55,2,"#ff0","center")}function drawHook(e){e.lineCut||drawSprite(HOOK_SPRITE,HOOK_PAL,e.hookX-4,e.hookY-4,2)}function drawFishCreature(e){if(!e.alive)return;const t=e.vx>=0?1:-1;if(ctx.save(),t<0&&(ctx.translate(e.x+20,0),ctx.scale(-1,1),ctx.translate(-e.x,0)),"fish"===e.type){const t=0===e.variant?FISH_PAL:FISH2_PAL;drawSprite(0===e.variant?FISH_SPRITE:FISH2_SPRITE,t,e.x-20,e.y-20,5)}else if("squid"===e.type){drawSprite(Math.abs(Math.sin(e.pulseT))>.5?SQUID_SPRITE:["..SSS...",".SSSSS..","SSSSSSS.","SWSSSWS.",".SSSSS..","..SSS...","...S....","........"],SQUID_PAL,e.x-20,e.y-20,5)}else if("ruby"===e.type){const t=Math.floor(totalFrames/10)%3==0;drawSprite(RUBY_SPRITE,t?RUBY_PAL_SHINE:RUBY_PAL_BASE,e.x-20,e.y-20,5),t&&(ctx.fillStyle="#fff",ctx.fillRect(e.x-25,e.y-25,3,3),ctx.fillRect(e.x+22,e.y-20,3,3),ctx.fillRect(e.x-5,e.y-35,3,3))}ctx.restore()}function drawCrab(e){if(!e.alive)return;if(e.stunTimer>0&&Math.floor(totalFrames/6)%2==0)return;const t=e.vx>=0?1:-1;ctx.save(),t<0&&(ctx.translate(e.x+20,0),ctx.scale(-1,1),ctx.translate(-e.x,0)),drawSprite(CRAB_SPRITE,CRAB_PAL,e.x-20,e.y-20,5);const a=Math.floor(totalFrames/15)%2;ctx.fillStyle=C.crabRed,ctx.fillRect(e.x-45+2*a,e.y-25,15,10),ctx.fillRect(e.x+30-2*a,e.y-25,15,10),ctx.restore()}function drawUI(){ctx.fillStyle="rgba(0,0,0,0.6)",ctx.fillRect(4,4,200,60),ctx.fillStyle=C.p1,ctx.fillRect(4,4,200,4),drawPixelText("1P",12,12,2,C.p1),drawPixelText(String(players[0].score),12,32,3,C.white),drawPixelText("COMBO:"+players[0].maxCombo,12,58,1,"#aaa"),ctx.fillStyle="rgba(0,0,0,0.6)",ctx.fillRect(596,4,200,60),ctx.fillStyle=C.p2,ctx.fillRect(596,4,200,4),drawPixelText("2P",740,12,2,C.p2,"right"),drawPixelText(String(players[1].score),788,32,3,C.white,"right"),drawPixelText("COMBO:"+players[1].maxCombo,788,58,1,"#aaa","right");const e=Math.max(0,90-Math.floor(elapsed)),t=e<=10?totalFrames%20<10?"#f00":"#fff":C.yellow;ctx.fillStyle="rgba(0,0,0,0.6)",ctx.fillRect(340,750,120,40),drawPixelText(String(e),400,758,4,t,"center");for(const e of players){if(e.caughtFish.length>0){const t=0===e.idx?120:680;drawPixelText("x"+e.caughtFish.length,t,20,2,C.yellow,"center")}if(e.lineCut){const t=0===e.idx?120:680;ctx.fillStyle="rgba(200,0,0,0.7)",ctx.fillRect(t-50,4,100,22),drawPixelText("CUT!",t,8,2,"#fff","center")}}}function initTitleFish(){titleBgFish=[];for(let e=0;e<8;e++)titleBgFish.push({x:Math.random()*W,y:170+560*Math.random(),vx:(Math.random()<.5?1:-1)*(.6+Math.random()),wobbleT:Math.random()*Math.PI*2,type:["fish","squid","ruby"][Math.floor(3*Math.random())],variant:Math.floor(2*Math.random()),pulseT:Math.random()*Math.PI*2,frame:0})}function drawTitle(){drawSky(),drawWater(totalFrames),drawGround();for(const e of titleBgFish)e.frame++,e.wobbleT+=.05,e.pulseT+=.08,e.x+=e.vx,e.x<-40&&(e.x=840),e.x>840&&(e.x=-40),e.y+=.5*Math.sin(e.wobbleT),drawFishCreature(e);ctx.fillStyle="rgba(0,0,0,0.75)",ctx.fillRect(120,60,560,260),ctx.fillStyle=C.p1,ctx.fillRect(120,60,560,4),ctx.fillStyle=C.p2,ctx.fillRect(120,312,560,4);const e=Math.floor(totalFrames/15)%2==0;drawPixelText("FISHING",400,80,5,e?C.yellow:C.orange,"center"),drawPixelText("BATTLE",400,130,5,e?C.orange:C.yellow,"center"),drawPixelText("1P: A/D MOVE  S FISH",400,190,2,C.p1,"center"),drawPixelText("2P: J/L MOVE  K FISH",400,212,2,C.p2,"center"),drawPixelText("OR CONNECT 2 GAMEPADS",400,234,2,"#aaa","center"),Math.floor(totalFrames/25)%2==0&&(drawPixelText("PRESS S: 1P MODE",400,263,2,C.green,"center"),drawPixelText("PRESS K: 2P MODE",400,285,2,C.yellow,"center"));const t=380;ctx.fillStyle="rgba(0,0,0,0.6)",ctx.fillRect(200,t,400,80),drawSprite(FISH_SPRITE,FISH_PAL,210,390,2),drawPixelText("1PT",245,394,2,C.white),drawSprite(SQUID_SPRITE,SQUID_PAL,330,390,2),drawPixelText("10PT",365,394,2,C.white),drawSprite(RUBY_SPRITE,RUBY_PAL_BASE,470,390,2),drawPixelText("100PT",505,394,2,C.yellow),drawPixelText("CATCH COMBO FOR BONUS!",400,435,2,C.p1,"center")}function drawResult(){drawSky(),drawWater(totalFrames),drawGround(),ctx.fillStyle="rgba(0,0,0,0.82)",ctx.fillRect(100,60,600,460),ctx.fillStyle=C.yellow,ctx.fillRect(100,60,600,4),ctx.fillRect(100,516,600,4),drawPixelText("GAME OVER",400,80,4,C.yellow,"center");const e=players[0],t=players[1];let a,r;drawPixelText("1P",200,155,3,C.p1,"center"),drawPixelText(String(e.score),200,185,4,C.white,"center"),drawPixelText("MAX COMBO",200,228,2,"#aaa","center"),drawPixelText("x"+e.maxCombo,200,248,3,C.p1,"center"),drawPixelText("VS",400,200,3,C.yellow,"center"),drawPixelText("2P",600,155,3,C.p2,"center"),drawPixelText(String(t.score),600,185,4,C.white,"center"),drawPixelText("MAX COMBO",600,228,2,"#aaa","center"),drawPixelText("x"+t.maxCombo,600,248,3,C.p2,"center"),ctx.fillStyle="rgba(255,220,0,0.15)",ctx.fillRect(150,300,500,60),e.score>t.score?(a="1P WINS!",r=C.p1):t.score>e.score?(a="2P WINS!",r=C.p2):(a="DRAW!",r=C.yellow);drawPixelText(a,400,315,4,Math.floor(totalFrames/10)%2==0?r:C.white,"center"),Math.floor(totalFrames/25)%2==0&&drawPixelText("PRESS SPACE TO RETRY",400,400,2,C.green,"center"),drawPixelText("1P: A/D MOVE  S FISH   2P: J/L MOVE  K FISH   SPACE TO RETRY",400,445,1,"#666","center")}function resetGame(){game.state="title",game.mode="2p",creatures=[],crabs=[],players=[createPlayer(0),createPlayer(1)],elapsed=0,waveFrame=0,totalFrames=0,initTitleFish()}function startGame(e){audio&&"suspended"===audio.state&&audio.resume(),game.state="play",game.mode=e||"2p",creatures=[],crabs=[],crabs=[{x:Math.random()*W,y:200,vx:Math.random()<.5?.975:-.975,alive:!0,stunTimer:0},{x:Math.random()*W,y:360,vx:Math.random()<.5?.975:-.975,alive:!0,stunTimer:0},{x:Math.random()*W,y:520,vx:Math.random()<.5?.975:-.975,alive:!0,stunTimer:0},{x:Math.random()*W,y:680,vx:Math.random()<.5?.975:-.975,alive:!0,stunTimer:0}],players=[createPlayer(0),createPlayer(1)],elapsed=0,waveFrame=0,rubySpawnIndex=0,maxCreatures=15,"1p"===game.mode&&resetAiTimer(),soundStart(),spawnWave()}let lastTime=0;function gameLoop(e){requestAnimationFrame(gameLoop);const t=Math.min((e-lastTime)/1e3,.05);if(lastTime=e,totalFrames++,pollGamepads(),ctx.clearRect(0,0,W,H),"title"===game.state)return void drawTitle();if("result"===game.state)return void drawResult();elapsed+=t;if(90-elapsed<=0)return game.state="result",void soundGameOver();if(maxCreatures=Math.floor(10+.2*elapsed),waveFrame++,waveFrame>=waveInterval&&(waveFrame=0,spawnWave()),rubySpawnIndex<rubySpawnTimes.length&&elapsed>=rubySpawnTimes[rubySpawnIndex]){const e=createFish(rubySpawnX[rubySpawnIndex],730,"ruby");e.vx=0,e.vy=0,creatures.push(e),rubySpawnIndex++}{const e=players[0];e.stunTimer<=0&&(keys.KeyA&&(e.rodX=Math.max(40,e.rodX-1.3)),keys.KeyD&&(e.rodX=Math.min(760,e.rodX+1.3)))}if("2p"===game.mode){const e=players[1];e.stunTimer<=0&&(keys.KeyJ&&(e.rodX=Math.max(40,e.rodX-1.3)),keys.KeyL&&(e.rodX=Math.min(760,e.rodX+1.3)))}"1p"===game.mode&&updateAI();for(const e of players)e.stunTimer<=0&&updateHook(e);for(const e of players)e.stunTimer>0&&e.stunTimer--;updateCreatures(),updateCrabs(),checkCrabCutLines(),drawSky(),drawWater(totalFrames);for(const e of creatures)drawFishCreature(e);for(const e of crabs)drawCrab(e);for(const e of players)drawRod(e),drawHook(e);drawGround(),drawUI();for(const e of players)if(e.caughtFish.length>=3){const t=0===e.idx?200:600;Math.floor(totalFrames/8)%2==0&&drawPixelText("COMBO!",t,90,3,C.yellow,"center")}}resetGame(),requestAnimationFrame((e=>{lastTime=e,requestAnimationFrame(gameLoop)}))</script>
+<canvas id="game" width="800" height="800"></canvas>
+<script>
+// ============================================================
+//  FISHING BATTLE — single-file canvas game
+// ============================================================
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+const W = 800, H = 800;
+
+// ── Colours ──────────────────────────────────────────────────
+const C = {
+  sky:        '#0a0a1a',
+  water:      '#0d2b45',
+  waterLight: '#1a3f5c',
+  waterDeep:  '#081828',
+  ground:     '#5c3a1e',
+  groundLight:'#7a4e2d',
+  sand:       '#c8a265',
+  white:      '#ffffff',
+  black:      '#000000',
+  p1:         '#4af',
+  p2:         '#f84',
+  red:        '#e33',
+  green:      '#3e3',
+  yellow:     '#fe3',
+  orange:     '#f83',
+  pink:       '#f5a',
+  purple:     '#a5f',
+  brown:      '#8B5e3c',
+  metal:      '#aaa',
+  darkMetal:  '#666',
+  ruby:       '#e02020',
+  rubyShine:  '#ff6060',
+  squidPink:  '#e060b0',
+  squidDark:  '#802080',
+  fishOrange: '#f86020',
+  fishBlue:   '#2080f8',
+  crabRed:    '#e02828',
+  lineColor:  '#ddd',
+};
+
+// ── Audio ─────────────────────────────────────────────────────
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audio;
+try { audio = new AudioCtx(); } catch(e) {}
+
+function beep(freq, dur, type='square', vol=0.15) {
+  if (!audio) return;
+  try {
+    const osc = audio.createOscillator();
+    const gain = audio.createGain();
+    osc.connect(gain); gain.connect(audio.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audio.currentTime);
+    gain.gain.setValueAtTime(vol, audio.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + dur);
+    osc.start(audio.currentTime);
+    osc.stop(audio.currentTime + dur);
+  } catch(e) {}
+}
+
+function soundCatch() {
+  if (!audio) return;
+  try {
+    const osc = audio.createOscillator();
+    const gain = audio.createGain();
+    osc.connect(gain); gain.connect(audio.destination);
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(600, audio.currentTime);
+    osc.frequency.linearRampToValueAtTime(1200, audio.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.2, audio.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + 0.15);
+    osc.start(audio.currentTime);
+    osc.stop(audio.currentTime + 0.15);
+  } catch(e) {}
+}
+function soundMultiCatch(n) {
+  if (!audio) return;
+  try {
+    const baseNotes = [523, 659, 784, 1047]; // C5, E5, G5, C6
+    const count = Math.min(n, baseNotes.length);
+    for (let i = 0; i < count; i++) {
+      const osc = audio.createOscillator();
+      const gain = audio.createGain();
+      osc.connect(gain); gain.connect(audio.destination);
+      osc.type = 'square';
+      const t = audio.currentTime + i * 0.1;
+      osc.frequency.setValueAtTime(baseNotes[i], t);
+      gain.gain.setValueAtTime(0.18, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+      osc.start(t);
+      osc.stop(t + 0.2);
+    }
+    // Add a shimmer/sparkle overlay for big combos (3+)
+    if (n >= 3) {
+      const osc2 = audio.createOscillator();
+      const gain2 = audio.createGain();
+      osc2.connect(gain2); gain2.connect(audio.destination);
+      osc2.type = 'sine';
+      const t2 = audio.currentTime + count * 0.1;
+      osc2.frequency.setValueAtTime(1568, t2); // G6
+      osc2.frequency.linearRampToValueAtTime(2093, t2 + 0.3); // C7
+      gain2.gain.setValueAtTime(0.12, t2);
+      gain2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.4);
+      osc2.start(t2);
+      osc2.stop(t2 + 0.4);
+    }
+  } catch(e) {}
+}
+function soundCut() {
+  if (!audio) return;
+  try {
+    // "Buchi" snap - noise-like burst
+    const osc1 = audio.createOscillator();
+    const gain1 = audio.createGain();
+    osc1.connect(gain1); gain1.connect(audio.destination);
+    osc1.type = 'sawtooth';
+    osc1.frequency.setValueAtTime(300, audio.currentTime);
+    osc1.frequency.linearRampToValueAtTime(50, audio.currentTime + 0.15);
+    gain1.gain.setValueAtTime(0.3, audio.currentTime);
+    gain1.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + 0.15);
+    osc1.start(audio.currentTime);
+    osc1.stop(audio.currentTime + 0.15);
+
+    // "Gaan" - descending dramatic tone
+    const osc2 = audio.createOscillator();
+    const gain2 = audio.createGain();
+    osc2.connect(gain2); gain2.connect(audio.destination);
+    osc2.type = 'square';
+    osc2.frequency.setValueAtTime(440, audio.currentTime + 0.1);
+    osc2.frequency.linearRampToValueAtTime(110, audio.currentTime + 0.5);
+    gain2.gain.setValueAtTime(0.2, audio.currentTime + 0.1);
+    gain2.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + 0.5);
+    osc2.start(audio.currentTime + 0.1);
+    osc2.stop(audio.currentTime + 0.5);
+
+    // Low rumble
+    const osc3 = audio.createOscillator();
+    const gain3 = audio.createGain();
+    osc3.connect(gain3); gain3.connect(audio.destination);
+    osc3.type = 'triangle';
+    osc3.frequency.setValueAtTime(80, audio.currentTime + 0.1);
+    gain3.gain.setValueAtTime(0.15, audio.currentTime + 0.1);
+    gain3.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + 0.6);
+    osc3.start(audio.currentTime + 0.1);
+    osc3.stop(audio.currentTime + 0.6);
+  } catch(e) {}
+}
+function soundReel() { beep(330, 0.05, 'square', 0.08); }
+function soundGameOver() {
+  [440,330,220,110].forEach((f,i)=>setTimeout(()=>beep(f,0.3,'square',0.15),i*200));
+}
+function soundStart() {
+  [220,330,440,550,660].forEach((f,i)=>setTimeout(()=>beep(f,0.1,'square',0.12),i*80));
+}
+
+// ── Input ─────────────────────────────────────────────────────
+const keys = {};
+document.addEventListener('keydown', e => {
+  if (!keys[e.code]) {
+    keys[e.code] = true;
+    handleKeyPress(e.code);
+  }
+});
+document.addEventListener('keyup', e => { keys[e.code] = false; });
+
+const gpState = [
+  { prev: Array(17).fill(false) },
+  { prev: Array(17).fill(false) },
+];
+
+function pollGamepads() {
+  const gps = navigator.getGamepads ? navigator.getGamepads() : [];
+  let gpIdx = 0;
+  for (let i = 0; i < gps.length && gpIdx < 2; i++) {
+    const gp = gps[i];
+    if (!gp) continue;
+    const state = gpState[gpIdx];
+
+    // Button press events (for hook toggle & menu navigation)
+    for (let b = 0; b < gp.buttons.length; b++) {
+      const pressed = gp.buttons[b].pressed;
+      if (pressed && !state.prev[b]) {
+        handleGamepadPress(gpIdx, b);
+      }
+      state.prev[b] = pressed;
+    }
+
+    // Continuous axis / d-pad movement in play state
+    if (game.state === 'play') {
+      const axisX = gp.axes[0] || 0;
+      // Skip movement for AI-controlled player 2 in 1P mode
+      const isManagedByAI = (game.mode === '1p' && gpIdx === 1);
+      if (!isManagedByAI) {
+        const p = players[gpIdx];
+        if (p && p.stunTimer <= 0) {
+          const [minX, maxX] = [40, W - 40];
+          if (axisX < -0.3 || (gp.buttons[14] && gp.buttons[14].pressed)) {
+            p.rodX = Math.max(minX, p.rodX - ROD_SPEED * dt);
+          }
+          if (axisX >  0.3 || (gp.buttons[15] && gp.buttons[15].pressed)) {
+            p.rodX = Math.min(maxX, p.rodX + ROD_SPEED * dt);
+          }
+        }
+      }
+    }
+
+    gpIdx++;
+  }
+}
+
+function handleKeyPress(code) {
+  if (game.state === 'title') {
+    if (code === 'KeyS') { startGame('1p'); return; }
+    // Any other key → 2P mode
+    startGame('2p');
+    return;
+  }
+  if (game.state === 'result') { if (code === 'Space') { resetGame(); } return; }
+  if (game.state === 'play') {
+    if (code === 'KeyS') toggleHook(0);
+    // In 2P mode, K controls player 2; in 1P mode K still works as 2P override
+    if (code === 'KeyK') toggleHook(1);
+  }
+}
+
+function handleGamepadPress(playerIdx, buttonIdx) {
+  if (game.state === 'title') { startGame('2p'); return; }
+  if (game.state === 'result') { return; }
+  if (game.state === 'play') {
+    // In 1P mode, AI controls player 2 — don't let gamepad 2 override
+    if (game.mode === '1p' && playerIdx === 1) return;
+    toggleHook(playerIdx);
+  }
+}
+
+// ── Constants ─────────────────────────────────────────────────
+const WATER_TOP = 120;       // y where water starts
+const GROUND_TOP = H - 60;   // y where ground starts
+const ROD_P1 = { x: 80,  y: WATER_TOP };
+const ROD_P2 = { x: W-80, y: WATER_TOP };
+
+// Speeds in pixels per second (60fps equivalent)
+const BASE_ASCENT = 60;
+const BASE_DESCENT = 42;
+const WEIGHT_FACTOR = 0.6;
+const MIN_ASCENT = 48;
+const MAX_DESCENT = 78;
+const ROD_SPEED = 78; // horizontal movement speed
+
+// ── Game State ────────────────────────────────────────────────
+let game = { state: 'title', mode: '2p' };
+let creatures = [];
+let crabs = [];
+let players = [];
+let waveTick = 0;
+let waveInterval = 180; // frames (3s @ 60fps)
+let elapsed = 0;        // seconds
+let totalFrames = 0;
+let titleBgFish = [];
+let maxCreatures = 15;
+
+// ── AI state for 1P mode ──────────────────────────────────────
+let aiTimer = 0;       // counts down to next AI hook toggle
+let aiToggleInterval = 0; // random interval between toggles
+
+// ── Ruby spawn timer ──────────────────────────────────────────
+let rubySpawnTimes = [15, 35, 55, 75]; // spawn at these elapsed seconds
+let rubySpawnIndex = 0;
+const rubySpawnX = [W * 0.2, W * 0.7, W * 0.4, W * 0.8]; // x positions for each ruby
+
+// ── Pixel Drawing Helpers ─────────────────────────────────────
+function px(x, y, w, h, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(Math.floor(x), Math.floor(y), w, h);
+}
+
+// Draw an 8×8 sprite from a pixel array (16 chars hex, each nibble = palette index)
+function drawSprite(data, palette, x, y, scale=2) {
+  const s = scale;
+  for (let row = 0; row < data.length; row++) {
+    for (let col = 0; col < data[row].length; col++) {
+      const c = data[row][col];
+      if (c === '.' || c === ' ') continue;
+      ctx.fillStyle = palette[c] || '#fff';
+      ctx.fillRect(Math.floor(x + col*s), Math.floor(y + row*s), s, s);
+    }
+  }
+}
+
+// ── Sprites (pixel arrays) ────────────────────────────────────
+// Fish sprite (8×8, scale 2 → 16×16)
+const FISH_SPRITE = [
+  '..BBB...',
+  '.BBBBB..',
+  'BBBBBBOB',
+  'BBBBBWOB',
+  'BBBBBBOB',
+  '.BBBBB..',
+  '..BBB...',
+  '........',
+];
+const FISH_PAL = { B: C.fishOrange, O: '#000', W: '#fff' };
+
+const FISH2_SPRITE = [
+  '..222...',
+  '.22222..',
+  '222222O2',
+  '222222WO',
+  '222222O2',
+  '.22222..',
+  '..222...',
+  '........',
+];
+const FISH2_PAL = { '2': C.fishBlue, O: '#000', W: '#fff' };
+
+// Squid sprite
+const SQUID_SPRITE = [
+  '..SSS...',
+  '.SSSSS..',
+  'SSSSSSS.',
+  'SWSSSWS.',
+  '.SSSSS..',
+  '..SSS...',
+  '.S.S.S..',
+  'S..S..S.',
+];
+const SQUID_PAL = { S: C.squidPink, W: '#fff' };
+
+// Ruby sprite (8×8)
+const RUBY_SPRITE = [
+  '..RRR...',
+  '.RRRRR..',
+  'RRRRRRR.',
+  'RRRRRRR.',
+  '.RRRRR..',
+  '..RRR...',
+  '...R....',
+  '........',
+];
+const RUBY_PAL_BASE = { R: C.ruby };
+const RUBY_PAL_SHINE = { R: C.rubyShine };
+
+// Crab sprite
+const CRAB_SPRITE = [
+  'C.CCC.C.',
+  '.CCCCC..',
+  'CCCCCCC.',
+  'CWCCCWC.',
+  '.CCCCC..',
+  'C.CCC.C.',
+  '.C...C..',
+  '........',
+];
+const CRAB_PAL = { C: C.crabRed, W: '#fff' };
+
+// Person sprite for 1P (facing right)
+const PERSON_SPRITE = [
+  '..HH....',
+  '.HFFH...',
+  '.HFFH...',
+  '..HH....',
+  '.BBBB...',
+  '..BB.R..',
+  '.B..B...',
+  '.L..L...',
+];
+const PERSON1_PAL = { H: '#4a3020', F: '#ffcc88', B: '#4488ff', R: '#8B5e3c', L: '#335599' };
+const PERSON2_PAL = { H: '#4a3020', F: '#ffcc88', B: '#ff6644', R: '#8B5e3c', L: '#cc4422' };
+
+// Hook sprite (4×8)
+const HOOK_SPRITE = [
+  '.HH.',
+  'H..H',
+  '...H',
+  '...H',
+  '..HH',
+  '.H..',
+  '....',
+  '....',
+];
+const HOOK_PAL = { H: C.metal };
+
+// Raft sprite (12×4 pixels, wider than person)
+const RAFT_SPRITE = [
+  'LLLLLLLLLLLL',
+  'WLWLWLWLWLWL',
+  'LLLLLLLLLLLL',
+  'W.WW..WW..WW',
+];
+const RAFT_PAL = { L: '#8B5e3c', W: '#6a4020' };
+
+// ── Pixel font (5×7 per char) ─────────────────────────────────
+const PFONT = {
+  'A':['01110','10001','10001','11111','10001','10001','10001'],
+  'B':['11110','10001','10001','11110','10001','10001','11110'],
+  'C':['01111','10000','10000','10000','10000','10000','01111'],
+  'D':['11110','10001','10001','10001','10001','10001','11110'],
+  'E':['11111','10000','10000','11110','10000','10000','11111'],
+  'F':['11111','10000','10000','11110','10000','10000','10000'],
+  'G':['01111','10000','10000','10011','10001','10001','01111'],
+  'H':['10001','10001','10001','11111','10001','10001','10001'],
+  'I':['11111','00100','00100','00100','00100','00100','11111'],
+  'J':['11111','00010','00010','00010','00010','10010','01100'],
+  'K':['10001','10010','10100','11000','10100','10010','10001'],
+  'L':['10000','10000','10000','10000','10000','10000','11111'],
+  'M':['10001','11011','10101','10001','10001','10001','10001'],
+  'N':['10001','11001','10101','10011','10001','10001','10001'],
+  'O':['01110','10001','10001','10001','10001','10001','01110'],
+  'P':['11110','10001','10001','11110','10000','10000','10000'],
+  'Q':['01110','10001','10001','10001','10101','10010','01101'],
+  'R':['11110','10001','10001','11110','10100','10010','10001'],
+  'S':['01111','10000','10000','01110','00001','00001','11110'],
+  'T':['11111','00100','00100','00100','00100','00100','00100'],
+  'U':['10001','10001','10001','10001','10001','10001','01110'],
+  'V':['10001','10001','10001','10001','10001','01010','00100'],
+  'W':['10001','10001','10001','10101','10101','11011','10001'],
+  'X':['10001','01010','01010','00100','01010','01010','10001'],
+  'Y':['10001','10001','01010','00100','00100','00100','00100'],
+  'Z':['11111','00001','00010','00100','01000','10000','11111'],
+  '0':['01110','10001','10011','10101','11001','10001','01110'],
+  '1':['00100','01100','00100','00100','00100','00100','01110'],
+  '2':['01110','10001','00001','00010','00100','01000','11111'],
+  '3':['11111','00010','00100','00110','00001','10001','01110'],
+  '4':['00010','00110','01010','10010','11111','00010','00010'],
+  '5':['11111','10000','10000','11110','00001','00001','11110'],
+  '6':['00110','01000','10000','11110','10001','10001','01110'],
+  '7':['11111','00001','00010','00100','01000','01000','01000'],
+  '8':['01110','10001','10001','01110','10001','10001','01110'],
+  '9':['01110','10001','10001','01111','00001','00010','01100'],
+  ' ':['00000','00000','00000','00000','00000','00000','00000'],
+  ':':['00000','00100','00100','00000','00100','00100','00000'],
+  '!':['00100','00100','00100','00100','00100','00000','00100'],
+  '-':['00000','00000','00000','11111','00000','00000','00000'],
+  '/':['00001','00010','00010','00100','01000','01000','10000'],
+  '.':['00000','00000','00000','00000','00000','00100','00100'],
+};
+
+function drawPixelText(text, x, y, scale=2, color='#fff', align='left') {
+  const chars = text.toUpperCase().split('');
+  const charW = (5 + 1) * scale; // 5px + 1 gap
+  const totalW = chars.length * charW;
+  let startX = x;
+  if (align === 'center') startX = x - totalW / 2;
+  if (align === 'right') startX = x - totalW;
+
+  chars.forEach((ch, i) => {
+    const data = PFONT[ch];
+    if (!data) return;
+    const cx = startX + i * charW;
+    data.forEach((row, ry) => {
+      for (let bx = 0; bx < row.length; bx++) {
+        if (row[bx] === '1') {
+          ctx.fillStyle = color;
+          ctx.fillRect(Math.floor(cx + bx*scale), Math.floor(y + ry*scale), scale, scale);
+        }
+      }
+    });
+  });
+}
+
+// ── Game Objects ──────────────────────────────────────────────
+function createFish(x, y, type) {
+  const dir = Math.random() < 0.5 ? 1 : -1;
+  const speed = 0.4 + Math.random() * 0.6;
+  return {
+    id: Math.random(),
+    type,        // 'fish','squid','ruby'
+    x, y,
+    vx: dir * speed * (type === 'ruby' ? 0.2 : 1),
+    vy: 0,
+    wobbleT: Math.random() * Math.PI * 2,
+    pulseT: 0,
+    caught: false,
+    caughtBy: -1,
+    scattered: false,
+    scatterVx: 0,
+    scatterVy: 0,
+    alive: true,
+    frame: 0,
+    variant: Math.random() < 0.5 ? 0 : 1,
+  };
+}
+
+function spawnWave() {
+  const aliveCount = creatures.filter(f => f.alive && !f.caught).length;
+  if (aliveCount >= maxCreatures) return;
+
+  const capacity = maxCreatures - aliveCount;
+  const baseWaveSize = Math.floor(1 + elapsed / 30);
+  const waveSize = Math.min(baseWaveSize + 2, capacity);
+  if (waveSize <= 0) return;
+
+  for (let i = 0; i < waveSize; i++) {
+    const roll = Math.random();
+    let type;
+    if (roll < 0.30) type = 'squid';
+    else type = 'fish';
+
+    // Spawn from ground with upward movement
+    const x = Math.random() * (W - 80) + 40;
+    const y = GROUND_TOP - 40;
+    const f = createFish(x, y, type);
+
+    // Small random horizontal drift
+    f.vx = (Math.random() - 0.5) * 0.78;
+
+    // Initial upward velocity based on type
+    if (type === 'fish') {
+      f.vy = -(1.3 + Math.random() * 0.975);
+    } else if (type === 'squid') {
+      f.vy = -(1.625 + Math.random() * 1.3);
+    }
+
+    creatures.push(f);
+  }
+}
+
+function createPlayer(idx) {
+  const rx = idx === 0 ? ROD_P1.x : ROD_P2.x;
+  const ry = idx === 0 ? ROD_P1.y : ROD_P2.y;
+  return {
+    idx,
+    rodX: rx,
+    rodY: ry,
+    hookX: rx,
+    hookY: ry + 10,
+    hookDown: true,
+    score: 0,
+    maxCombo: 0,
+    caughtFish: [],
+    lineCut: false,
+    cutFlash: 0,
+    stunTimer: 0,
+  };
+}
+
+// ── Hook mechanics ────────────────────────────────────────────
+function toggleHook(idx) {
+  const p = players[idx];
+  if (p.stunTimer > 0) return;
+  if (p.lineCut) {
+    // re-deploy after cut
+    p.lineCut = false;
+    p.hookDown = true;
+    p.hookY = p.rodY + 10;
+    p.caughtFish = [];
+    soundReel();
+    return;
+  }
+  p.hookDown = !p.hookDown;
+  if (!p.hookDown) {
+    soundReel();
+  }
+}
+
+function hookWeight(p) {
+  return p.caughtFish.reduce((s, f) => {
+    if (f.type === 'fish') return s + 1;
+    if (f.type === 'squid') return s + 10;
+    if (f.type === 'ruby') return s + 100;
+    return s;
+  }, 0);
+}
+
+function hookAscentSpeed(p) {
+  const w = hookWeight(p);
+  return Math.max(MIN_ASCENT, BASE_ASCENT - w * WEIGHT_FACTOR);
+}
+function hookDescentSpeed(p) {
+  const w = hookWeight(p);
+  return Math.min(MAX_DESCENT, BASE_DESCENT + w * WEIGHT_FACTOR);
+}
+
+function updateHook(p) {
+  if (p.lineCut) return;
+
+  if (p.hookDown) {
+    // Descending
+    p.hookY += hookDescentSpeed(p) * dt;
+    if (p.hookY >= GROUND_TOP - 10) {
+      p.hookY = GROUND_TOP - 10;
+      p.hookDown = false; // auto switch to ascending
+    }
+  } else {
+    // Ascending
+    p.hookY -= hookAscentSpeed(p) * dt;
+    if (p.hookY <= p.rodY + 10) {
+      p.hookY = p.rodY + 10;
+      // Score fish!
+      if (p.caughtFish.length > 0) {
+        const combo = p.caughtFish.length;
+        if (combo > p.maxCombo) p.maxCombo = combo;
+        const gained = p.caughtFish.reduce((s, f) => s + fishScore(f.type), 0);
+        p.score += gained;
+        p.caughtFish.forEach(f => { f.alive = false; });
+        p.caughtFish = [];
+        soundMultiCatch(combo);
+        if (combo >= 3) {
+          // Bonus flash effect (visual only)
+        }
+      }
+      // p.hookDown = true; // auto switch to descending — REMOVED: hook now stops at surface
+    }
+  }
+
+  // Hook X follows rod tip (offset by hand direction)
+  const isP1 = p.idx === 0;
+  const dir = isP1 ? 1 : -1;
+  p.hookX = p.rodX + dir * 14;
+
+  // Catch fish
+  for (const f of creatures) {
+    if (!f.alive || f.caught) continue;
+    const dx = f.x - p.hookX;
+    const dy = f.y - p.hookY;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const hitR = f.type === 'ruby' ? 34 : f.type === 'squid' ? 38 : 30;
+    if (dist < hitR) {
+      f.caught = true;
+      f.caughtBy = p.idx;
+      p.caughtFish.push(f);
+      soundCatch();
+    }
+  }
+}
+
+function fishScore(type) {
+  if (type === 'ruby') return 100;
+  if (type === 'squid') return 10;
+  return 1;
+}
+
+// ── AI for 1P mode ───────────────────────────────────────────
+function resetAiTimer() {
+  // Toggle interval: 2–4 seconds expressed in frames (@ ~60fps)
+  aiToggleInterval = Math.floor((2 + Math.random() * 2) * 60);
+  aiTimer = aiToggleInterval;
+}
+
+function updateAI() {
+  const p = players[1];
+
+  // Re-deploy after line cut
+  if (p.lineCut) {
+    resetAiTimer();
+    toggleHook(1); // re-deploy
+    return;
+  }
+
+  // Slow horizontal drift toward nearest uncaught fish
+  const targets = creatures.filter(f => f.alive && !f.caught);
+  if (targets.length > 0) {
+    // Find closest fish to current hookX
+    let nearest = targets[0];
+    let nearestDist = Math.abs(targets[0].x - p.rodX);
+    for (const f of targets) {
+      const d = Math.abs(f.x - p.rodX);
+      if (d < nearestDist) { nearestDist = d; nearest = f; }
+    }
+    const minX = 40;
+    const maxX = W - 40;
+    const aiSpeed = ROD_SPEED * 0.4; // slower than player
+    if (nearest.x < p.rodX - 10) p.rodX = Math.max(minX, p.rodX - aiSpeed * dt);
+    else if (nearest.x > p.rodX + 10) p.rodX = Math.min(maxX, p.rodX + aiSpeed * dt);
+  }
+
+  // Hook toggle on timer
+  aiTimer--;
+  if (aiTimer <= 0) {
+    toggleHook(1);
+    resetAiTimer();
+  }
+}
+
+// ── Line cut by crab ──────────────────────────────────────────
+function checkCrabCutLines() {
+  for (const crab of crabs) {
+    if (!crab.alive) continue;
+    for (const p of players) {
+      if (p.lineCut) continue;
+      // Line is from rodY to hookY at hookX
+      const lx = p.hookX;
+      const ly1 = p.rodY;
+      const ly2 = p.hookY;
+      // Crab hitbox
+      if (Math.abs(crab.x - lx) < 22 &&
+          crab.y + 10 >= ly1 && crab.y <= ly2) {
+        cutLine(p);
+        crab.stunTimer = 120;
+        // Don't kill crab; just keep going
+      }
+    }
+  }
+}
+
+function cutLine(p) {
+  p.lineCut = true;
+  p.hookDown = false;
+  p.cutFlash = 30;
+  p.stunTimer = 120;
+  soundCut();
+
+  // Scatter fish
+  p.caughtFish.forEach(f => {
+    f.caught = false;
+    f.caughtBy = -1;
+    f.scattered = true;
+    if (f.type === 'ruby') {
+      // Fall straight down
+      f.vx = 0;
+      f.vy = 3;
+    } else if (f.type === 'squid') {
+      // Squid jet away
+      const dir = Math.random() < 0.5 ? -1 : 1;
+      f.vx = dir * (2 + Math.random() * 2);
+      f.vy = -2 - Math.random() * 2;
+      f.pulseT = 0;
+    } else {
+      // Fish scatter
+      f.vx = (Math.random() - 0.5) * 4;
+      f.vy = (Math.random() - 0.5) * 4;
+    }
+  });
+  p.caughtFish = [];
+}
+
+// ── Update creatures ──────────────────────────────────────────
+function updateCreatures() {
+  for (const f of creatures) {
+    if (!f.alive) continue;
+    if (f.caught) {
+      // Follow hook
+      const p = players[f.caughtBy];
+      if (!p || p.lineCut) {
+        f.caught = false;
+        f.caughtBy = -1;
+      } else {
+        // Stack fish vertically along the line, going upward from the hook
+        const offset = p.caughtFish.indexOf(f);
+        f.x = p.hookX;
+        f.y = Math.max(WATER_TOP + 10, p.hookY - (offset + 1) * 20);
+      }
+      continue;
+    }
+
+    f.frame++;
+    f.wobbleT += 0.05;
+    f.pulseT += 0.08;
+
+    if (f.scattered) {
+      // Scatter physics
+      if (f.type === 'ruby') {
+        f.vy += 0.1; // gravity
+        f.vy = Math.min(f.vy, 5);
+        f.y += f.vy;
+        if (f.y >= GROUND_TOP - 8) {
+          f.y = GROUND_TOP - 8;
+          f.vy = 0;
+          // Stay on ground, re-catchable (not scattered forever)
+          f.scattered = false;
+          f.vx = 0;
+          f.vy = 0;
+        }
+        // Bounce off walls
+        if (f.x <= 0) {
+          f.x = 0;
+          f.vx = Math.abs(f.vx);
+        }
+        if (f.x >= W) {
+          f.x = W;
+          f.vx = -Math.abs(f.vx);
+        }
+      } else if (f.type === 'squid') {
+        // Pulse motion: burst then decelerate
+        const pulse = Math.sin(f.pulseT) * 0.5;
+        f.x += f.vx + pulse;
+        f.y += f.vy;
+        f.vx *= 0.97;
+        f.vy *= 0.97;
+        // Keep in water
+        if (f.y < WATER_TOP + 5) { f.y = WATER_TOP + 5; f.vy = Math.abs(f.vy); }
+        if (f.y > GROUND_TOP - 12) { f.y = GROUND_TOP - 12; f.vy = -Math.abs(f.vy); }
+        // Bounce off walls instead of dying
+        if (f.x <= 0) {
+          f.x = 0;
+          f.vx = Math.abs(f.vx);
+        }
+        if (f.x >= W) {
+          f.x = W;
+          f.vx = -Math.abs(f.vx);
+        }
+        if (Math.abs(f.vx) < 0.1 && Math.abs(f.vy) < 0.1) f.scattered = false;
+      } else {
+        f.x += f.vx;
+        f.y += f.vy;
+        f.vy += 0.05;
+        if (f.y < WATER_TOP + 5) { f.y = WATER_TOP + 5; f.vy = Math.abs(f.vy) * 0.5; }
+        if (f.y > GROUND_TOP - 10) {
+          f.y = GROUND_TOP - 10;
+          f.vy = -Math.abs(f.vy) * 0.4;
+          f.vx *= 0.95;
+        }
+        // Bounce off walls instead of dying
+        if (f.x <= 0) {
+          f.x = 0;
+          f.vx = Math.abs(f.vx);
+        }
+        if (f.x >= W) {
+          f.x = W;
+          f.vx = -Math.abs(f.vx);
+        }
+        if (Math.abs(f.vx) < 0.05 && Math.abs(f.vy) < 0.05) f.scattered = false;
+      }
+      continue;
+    }
+
+    // Normal movement
+    if (f.type === 'fish') {
+      f.x += f.vx;
+      f.y += f.vy;
+      f.y += Math.sin(f.wobbleT) * 0.3;
+
+      // Bounce at water top
+      if (f.y <= WATER_TOP + 10) {
+        f.y = WATER_TOP + 10;
+        f.vy = Math.abs(f.vy) * 0.5;
+      }
+
+      // Bounce at ground
+      if (f.y >= GROUND_TOP - 30) {
+        f.y = GROUND_TOP - 30;
+        f.vy = -Math.abs(f.vy) * 0.5;
+      }
+
+      // Random drift to vy for natural swimming (slight upward bias)
+      f.vy += (Math.random() - 0.55) * 0.02;
+
+      // Bounce off walls instead of dying
+      if (f.x <= 0) {
+        f.x = 0;
+        f.vx = Math.abs(f.vx);
+      }
+      if (f.x >= W) {
+        f.x = W;
+        f.vx = -Math.abs(f.vx);
+      }
+    } else if (f.type === 'squid') {
+      const pulse = Math.abs(Math.sin(f.pulseT));
+      f.x += f.vx * (0.325 + pulse * 0.455);
+      f.y += f.vy;
+      f.y += Math.sin(f.wobbleT * 0.5) * 0.15;
+      f.vy += (Math.random() - 0.55) * 0.03;
+
+      // Bounce at water top
+      if (f.y <= WATER_TOP + 10) {
+        f.y = WATER_TOP + 10;
+        f.vy = Math.abs(f.vy) * 0.8;
+      }
+
+      // Bounce at ground
+      if (f.y >= GROUND_TOP - 30) {
+        f.y = GROUND_TOP - 30;
+        f.vy = -Math.abs(f.vy) * 0.8;
+      }
+
+      // Bounce off walls instead of dying
+      if (f.x <= 0) {
+        f.x = 0;
+        f.vx = Math.abs(f.vx);
+      }
+      if (f.x >= W) {
+        f.x = W;
+        f.vx = -Math.abs(f.vx);
+      }
+    } else if (f.type === 'ruby') {
+      // Ruby stays fixed on the ground, no movement
+    }
+  }
+  // Remove dead
+  creatures = creatures.filter(f => f.alive);
+}
+
+function updateCrabs() {
+  for (const crab of crabs) {
+    if (!crab.alive) continue;
+    if (crab.stunTimer > 0) {
+      crab.stunTimer--;
+      continue;
+    }
+    crab.x += crab.vx;
+    // Bounce off screen edges instead of dying
+    if (crab.x <= 0) {
+      crab.x = 0;
+      crab.vx = Math.abs(crab.vx); // bounce right
+    }
+    if (crab.x >= W) {
+      crab.x = W;
+      crab.vx = -Math.abs(crab.vx); // bounce left
+    }
+  }
+  crabs = crabs.filter(c => c.alive);
+}
+
+// ── Wave spawning ─────────────────────────────────────────────
+let waveFrame = 0;
+
+// ── Draw helpers ──────────────────────────────────────────────
+function drawWater(t) {
+  // Background water
+  ctx.fillStyle = C.waterDeep;
+  ctx.fillRect(0, WATER_TOP, W, GROUND_TOP - WATER_TOP);
+
+  // Wave lines
+  for (let wy = 0; wy < 5; wy++) {
+    const waveY = WATER_TOP + 8 + wy * 25 + Math.sin(t * 0.02 + wy) * 3;
+    ctx.fillStyle = wy === 0 ? C.waterLight : C.water;
+    ctx.fillRect(0, waveY, W, 2);
+    // Little wave pixels
+    for (let wx = 0; wx < W; wx += 16) {
+      const wh = Math.sin(t * 0.03 + wx * 0.04 + wy) * 3;
+      ctx.fillRect(wx, waveY + wh, 8, 2);
+    }
+  }
+}
+
+function drawGround() {
+  // Main ground
+  ctx.fillStyle = C.ground;
+  ctx.fillRect(0, GROUND_TOP, W, H - GROUND_TOP);
+
+  // Sandy top strip
+  ctx.fillStyle = C.sand;
+  ctx.fillRect(0, GROUND_TOP, W, 6);
+
+  // Pixel texture
+  for (let gx = 0; gx < W; gx += 8) {
+    ctx.fillStyle = Math.floor(gx / 8) % 2 === 0 ? C.groundLight : C.ground;
+    ctx.fillRect(gx, GROUND_TOP + 6, 8, 4);
+  }
+  // Stones
+  for (let sx = 30; sx < W; sx += 70) {
+    ctx.fillStyle = '#3a2a1a';
+    ctx.fillRect(sx, GROUND_TOP + 8, 12, 6);
+    ctx.fillStyle = '#6a4a2a';
+    ctx.fillRect(sx+2, GROUND_TOP + 8, 4, 3);
+  }
+}
+
+function drawSky() {
+  ctx.fillStyle = C.sky;
+  ctx.fillRect(0, 0, W, WATER_TOP);
+
+  // Stars
+  ctx.fillStyle = '#fff';
+  const starSeed = [13,47,83,127,211,293,317,401,457,503];
+  for (let i = 0; i < starSeed.length; i++) {
+    const sx = (starSeed[i] * 97) % W;
+    const sy = (starSeed[i] * 53) % (WATER_TOP - 10);
+    ctx.fillRect(sx, sy, 2, 2);
+  }
+
+  // Water surface glitter
+  ctx.fillStyle = '#3a6a8a';
+  ctx.fillRect(0, WATER_TOP, W, 8);
+  ctx.fillStyle = '#5a8aaa';
+  ctx.fillRect(0, WATER_TOP, W, 3);
+}
+
+function drawRod(p) {
+  const isP1 = p.idx === 0;
+  const pal = isP1 ? PERSON1_PAL : PERSON2_PAL;
+  const dir = isP1 ? 1 : -1;
+
+  // Bobbing animation: slight sine-wave motion for water float effect
+  const bobOffset = Math.sin(totalFrames * 0.03 + p.idx * Math.PI) * 2;
+
+  // Draw raft at water surface BEFORE drawing person (so person appears on top of raft)
+  const raftScale = 4;
+  const raftW = 12 * raftScale; // 48px wide
+  const raftH = 4 * raftScale;  // 16px tall
+  const raftX = p.rodX - raftW / 2;
+  const raftY = WATER_TOP - raftH / 2 + bobOffset; // centered on water line with bobbing
+  drawSprite(RAFT_SPRITE, RAFT_PAL, raftX, raftY, raftScale);
+
+  // Draw person sprite at scale 6 (48x48 pixels), centered above water line on the raft
+  const personX = p.rodX - 24;
+  const personY = WATER_TOP - 56 + bobOffset; // person bobs with raft
+  // Skip drawing if stunned and in blink phase
+  if (p.stunTimer > 0 && Math.floor(totalFrames / 10) % 2 === 0) {
+    // Don't draw person during stun blink
+  } else {
+    drawSprite(PERSON_SPRITE, pal, personX, personY, 6);
+  }
+
+  // Rod stick extending from person's hand
+  const handX = p.rodX + dir * 14;
+  const handY = WATER_TOP - 20 + bobOffset; // hand bobs with person
+
+  // Draw rod (vertical brown stick from hand downward)
+  if (!(p.stunTimer > 0 && Math.floor(totalFrames / 10) % 2 === 0)) {
+    ctx.fillStyle = '#8B5e3c';
+    ctx.fillRect(handX - 2, handY, 4, 24);
+    // Rod tip (lighter colour)
+    ctx.fillStyle = '#c8a265';
+    ctx.fillRect(handX - 2, handY + 22, 4, 5);
+  }
+
+  // Fishing line from rod tip down to hook
+  const lineStartX = handX;
+  const lineStartY = handY + 27;
+
+  if (!p.lineCut) {
+    ctx.fillStyle = p.cutFlash > 0 && p.cutFlash % 4 < 2 ? '#f00' : '#ddd';
+    ctx.fillRect(handX - 1, lineStartY, 2, p.hookY - lineStartY);
+  } else {
+    // Cut line — short dangling piece
+    if (p.cutFlash > 0) {
+      ctx.fillStyle = '#f00';
+      ctx.fillRect(handX - 1, lineStartY, 2, 20);
+    }
+  }
+  if (p.cutFlash > 0) p.cutFlash--;
+
+  // Draw STUN text when stunned
+  if (p.stunTimer > 0) {
+    if (Math.floor(totalFrames / 8) % 2 === 0) {
+      drawPixelText('STUN!', p.rodX, WATER_TOP - 65, 2, '#ff0', 'center');
+    }
+  }
+}
+
+function drawHook(p) {
+  if (p.lineCut) return;
+  drawSprite(HOOK_SPRITE, HOOK_PAL, p.hookX - 4, p.hookY - 4, 2);
+}
+
+function drawFishCreature(f) {
+  if (!f.alive) return;
+  const dir = f.vx >= 0 ? 1 : -1;
+
+  ctx.save();
+  if (dir < 0) {
+    // Flip horizontally
+    ctx.translate(f.x + 20, 0);
+    ctx.scale(-1, 1);
+    ctx.translate(-f.x, 0);
+  }
+
+  if (f.type === 'fish') {
+    const pal = f.variant === 0 ? FISH_PAL : FISH2_PAL;
+    const spr = f.variant === 0 ? FISH_SPRITE : FISH2_SPRITE;
+    drawSprite(spr, pal, f.x - 20, f.y - 20, 5);
+  } else if (f.type === 'squid') {
+    // Animate tentacles with pulse
+    const extended = Math.abs(Math.sin(f.pulseT)) > 0.5;
+    const spr = extended ? SQUID_SPRITE : [
+      '..SSS...',
+      '.SSSSS..',
+      'SSSSSSS.',
+      'SWSSSWS.',
+      '.SSSSS..',
+      '..SSS...',
+      '...S....',
+      '........',
+    ];
+    drawSprite(spr, SQUID_PAL, f.x - 20, f.y - 20, 5);
+  } else if (f.type === 'ruby') {
+    const shine = Math.floor(totalFrames / 10) % 3 === 0;
+    const pal = shine ? RUBY_PAL_SHINE : RUBY_PAL_BASE;
+    drawSprite(RUBY_SPRITE, pal, f.x - 20, f.y - 20, 5);
+    // Sparkles
+    if (shine) {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(f.x - 25, f.y - 25, 3, 3);
+      ctx.fillRect(f.x + 22, f.y - 20, 3, 3);
+      ctx.fillRect(f.x - 5, f.y - 35, 3, 3);
+    }
+  }
+  ctx.restore();
+}
+
+function drawCrab(crab) {
+  if (!crab.alive) return;
+  // Skip drawing if stunned and in blink phase
+  if (crab.stunTimer > 0 && Math.floor(totalFrames / 6) % 2 === 0) return;
+
+  const dir = crab.vx >= 0 ? 1 : -1;
+  ctx.save();
+  if (dir < 0) {
+    ctx.translate(crab.x + 20, 0);
+    ctx.scale(-1, 1);
+    ctx.translate(-crab.x, 0);
+  }
+  drawSprite(CRAB_SPRITE, CRAB_PAL, crab.x - 20, crab.y - 20, 5);
+  // Animated claws
+  const clawOffset = Math.floor(totalFrames / 15) % 2;
+  ctx.fillStyle = C.crabRed;
+  ctx.fillRect(crab.x - 45 + clawOffset * 2, crab.y - 25, 15, 10);
+  ctx.fillRect(crab.x + 30 - clawOffset * 2, crab.y - 25, 15, 10);
+  ctx.restore();
+}
+
+function drawUI() {
+  // P1 score box (top-left)
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(4, 4, 200, 60);
+  ctx.fillStyle = C.p1;
+  ctx.fillRect(4, 4, 200, 4);
+  drawPixelText('1P', 12, 12, 2, C.p1);
+  drawPixelText(String(players[0].score), 12, 32, 3, C.white);
+  drawPixelText('COMBO:' + players[0].maxCombo, 12, 58, 1, '#aaa');
+
+  // P2 score box (top-right)
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(W - 204, 4, 200, 60);
+  ctx.fillStyle = C.p2;
+  ctx.fillRect(W - 204, 4, 200, 4);
+  drawPixelText('2P', W - 60, 12, 2, C.p2, 'right');
+  drawPixelText(String(players[1].score), W - 12, 32, 3, C.white, 'right');
+  drawPixelText('COMBO:' + players[1].maxCombo, W - 12, 58, 1, '#aaa', 'right');
+
+  // Timer (center bottom)
+  const timeLeft = Math.max(0, 90 - Math.floor(elapsed));
+  const timerColor = timeLeft <= 10 ? (totalFrames % 20 < 10 ? '#f00' : '#fff') : C.yellow;
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(W/2 - 60, H - 50, 120, 40);
+  drawPixelText(String(timeLeft), W/2, H - 42, 4, timerColor, 'center');
+
+  // Fish count on hooks
+  for (const p of players) {
+    if (p.caughtFish.length > 0) {
+      const tx = p.idx === 0 ? 120 : W - 120;
+      drawPixelText('x' + p.caughtFish.length, tx, 20, 2, C.yellow, 'center');
+    }
+    if (p.lineCut) {
+      const tx = p.idx === 0 ? 120 : W - 120;
+      ctx.fillStyle = 'rgba(200,0,0,0.7)';
+      ctx.fillRect(tx - 50, 4, 100, 22);
+      drawPixelText('CUT!', tx, 8, 2, '#fff', 'center');
+    }
+  }
+}
+
+// ── Title screen ──────────────────────────────────────────────
+function initTitleFish() {
+  titleBgFish = [];
+  for (let i = 0; i < 8; i++) {
+    titleBgFish.push({
+      x: Math.random() * W,
+      y: WATER_TOP + 50 + Math.random() * (H - WATER_TOP - 120),
+      vx: (Math.random() < 0.5 ? 1 : -1) * (0.6 + Math.random()),
+      wobbleT: Math.random() * Math.PI * 2,
+      type: ['fish','squid','ruby'][Math.floor(Math.random() * 3)],
+      variant: Math.floor(Math.random() * 2),
+      pulseT: Math.random() * Math.PI * 2,
+      frame: 0,
+    });
+  }
+}
+
+function drawTitle() {
+  drawSky();
+  drawWater(totalFrames);
+  drawGround();
+
+  // Animate bg fish
+  for (const f of titleBgFish) {
+    f.frame++;
+    f.wobbleT += 0.05;
+    f.pulseT += 0.08;
+    f.x += f.vx;
+    if (f.x < -40) f.x = W + 40;
+    if (f.x > W + 40) f.x = -40;
+    f.y += Math.sin(f.wobbleT) * 0.5;
+    drawFishCreature(f);
+  }
+
+  // Title box
+  ctx.fillStyle = 'rgba(0,0,0,0.75)';
+  ctx.fillRect(W/2 - 280, 60, 560, 260);
+  ctx.fillStyle = C.p1;
+  ctx.fillRect(W/2 - 280, 60, 560, 4);
+  ctx.fillStyle = C.p2;
+  ctx.fillRect(W/2 - 280, 312, 560, 4);
+
+  // Title text
+  const flash = Math.floor(totalFrames / 15) % 2 === 0;
+  drawPixelText('FISHING', W/2, 80, 5, flash ? C.yellow : C.orange, 'center');
+  drawPixelText('BATTLE', W/2, 130, 5, flash ? C.orange : C.yellow, 'center');
+
+  // Instructions
+  drawPixelText('1P: A/D MOVE  S FISH', W/2, 190, 2, C.p1, 'center');
+  drawPixelText('2P: J/L MOVE  K FISH', W/2, 212, 2, C.p2, 'center');
+  drawPixelText('OR CONNECT 2 GAMEPADS', W/2, 234, 2, '#aaa', 'center');
+
+  // Mode selection (blinking)
+  if (Math.floor(totalFrames / 25) % 2 === 0) {
+    drawPixelText('PRESS S: 1P MODE', W/2, 263, 2, C.green, 'center');
+    drawPixelText('PRESS K: 2P MODE', W/2, 285, 2, C.yellow, 'center');
+  }
+
+  // Score legend
+  const ly = 380;
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(W/2 - 200, ly, 400, 80);
+
+  // Draw fish icon
+  drawSprite(FISH_SPRITE, FISH_PAL, W/2 - 190, ly + 10, 2);
+  drawPixelText('1PT', W/2 - 155, ly + 14, 2, C.white);
+
+  drawSprite(SQUID_SPRITE, SQUID_PAL, W/2 - 70, ly + 10, 2);
+  drawPixelText('10PT', W/2 - 35, ly + 14, 2, C.white);
+
+  drawSprite(RUBY_SPRITE, RUBY_PAL_BASE, W/2 + 70, ly + 10, 2);
+  drawPixelText('100PT', W/2 + 105, ly + 14, 2, C.yellow);
+
+  drawPixelText('CATCH COMBO FOR BONUS!', W/2, ly + 55, 2, C.p1, 'center');
+}
+
+// ── Result screen ─────────────────────────────────────────────
+function drawResult() {
+  drawSky();
+  drawWater(totalFrames);
+  drawGround();
+
+  ctx.fillStyle = 'rgba(0,0,0,0.82)';
+  ctx.fillRect(W/2 - 300, 60, 600, 460);
+  ctx.fillStyle = C.yellow;
+  ctx.fillRect(W/2 - 300, 60, 600, 4);
+  ctx.fillRect(W/2 - 300, 516, 600, 4);
+
+  drawPixelText('GAME OVER', W/2, 80, 4, C.yellow, 'center');
+
+  // Scores
+  const p1 = players[0], p2 = players[1];
+  drawPixelText('1P', W/2 - 200, 155, 3, C.p1, 'center');
+  drawPixelText(String(p1.score), W/2 - 200, 185, 4, C.white, 'center');
+  drawPixelText('MAX COMBO', W/2 - 200, 228, 2, '#aaa', 'center');
+  drawPixelText('x' + p1.maxCombo, W/2 - 200, 248, 3, C.p1, 'center');
+
+  drawPixelText('VS', W/2, 200, 3, C.yellow, 'center');
+
+  drawPixelText('2P', W/2 + 200, 155, 3, C.p2, 'center');
+  drawPixelText(String(p2.score), W/2 + 200, 185, 4, C.white, 'center');
+  drawPixelText('MAX COMBO', W/2 + 200, 228, 2, '#aaa', 'center');
+  drawPixelText('x' + p2.maxCombo, W/2 + 200, 248, 3, C.p2, 'center');
+
+  // Winner
+  ctx.fillStyle = 'rgba(255,220,0,0.15)';
+  ctx.fillRect(W/2 - 250, 300, 500, 60);
+  let winText, winColor;
+  if (p1.score > p2.score) {
+    winText = '1P WINS!'; winColor = C.p1;
+  } else if (p2.score > p1.score) {
+    winText = '2P WINS!'; winColor = C.p2;
+  } else {
+    winText = 'DRAW!'; winColor = C.yellow;
+  }
+
+  const flash = Math.floor(totalFrames / 10) % 2 === 0;
+  drawPixelText(winText, W/2, 315, 4, flash ? winColor : C.white, 'center');
+
+  // Restart
+  if (Math.floor(totalFrames / 25) % 2 === 0) {
+    drawPixelText('PRESS SPACE TO RETRY', W/2, 400, 2, C.green, 'center');
+  }
+
+  drawPixelText('1P: A/D MOVE  S FISH   2P: J/L MOVE  K FISH   SPACE TO RETRY', W/2, 445, 1, '#666', 'center');
+}
+
+// ── Game init & reset ─────────────────────────────────────────
+function resetGame() {
+  game.state = 'title';
+  game.mode = '2p';
+  creatures = [];
+  crabs = [];
+  players = [createPlayer(0), createPlayer(1)];
+  elapsed = 0;
+  waveFrame = 0;
+  totalFrames = 0;
+  initTitleFish();
+}
+
+function startGame(mode) {
+  if (audio && audio.state === 'suspended') audio.resume();
+  game.state = 'play';
+  game.mode = mode || '2p';
+  creatures = [];
+  crabs = [];
+  crabs = [
+    { x: Math.random() * W, y: WATER_TOP + 80, vx: Math.random() < 0.5 ? 0.975 : -0.975, alive: true, stunTimer: 0 },
+    { x: Math.random() * W, y: WATER_TOP + 240, vx: Math.random() < 0.5 ? 0.975 : -0.975, alive: true, stunTimer: 0 },
+    { x: Math.random() * W, y: WATER_TOP + 400, vx: Math.random() < 0.5 ? 0.975 : -0.975, alive: true, stunTimer: 0 },
+    { x: Math.random() * W, y: GROUND_TOP - 60, vx: Math.random() < 0.5 ? 0.975 : -0.975, alive: true, stunTimer: 0 },
+  ];
+  players = [createPlayer(0), createPlayer(1)];
+  elapsed = 0;
+  waveFrame = 0;
+  rubySpawnIndex = 0;
+  maxCreatures = 15;
+  // Initialize AI timer for 1P mode
+  if (game.mode === '1p') resetAiTimer();
+  soundStart();
+  // Initial wave
+  spawnWave();
+}
+
+// ── Main loop ─────────────────────────────────────────────────
+let lastTime = 0;
+let dt = 0; // delta time in seconds (global for all updates)
+
+function gameLoop(ts) {
+  requestAnimationFrame(gameLoop);
+  dt = Math.min((ts - lastTime) / 1000, 0.05);
+  lastTime = ts;
+  totalFrames++;
+
+  pollGamepads();
+
+  ctx.clearRect(0, 0, W, H);
+
+  if (game.state === 'title') {
+    drawTitle();
+    return;
+  }
+
+  if (game.state === 'result') {
+    drawResult();
+    return;
+  }
+
+  // ── PLAY ──
+  elapsed += dt;
+  const timeLeft = 90 - elapsed;
+
+  if (timeLeft <= 0) {
+    game.state = 'result';
+    soundGameOver();
+    return;
+  }
+
+  // Update max creatures based on elapsed time
+  maxCreatures = Math.floor(10 + elapsed * 0.2);
+
+  // Wave spawning
+  waveFrame++;
+  if (waveFrame >= waveInterval) {
+    waveFrame = 0;
+    spawnWave();
+  }
+
+  // Ruby spawning (timer-based)
+  if (rubySpawnIndex < rubySpawnTimes.length && elapsed >= rubySpawnTimes[rubySpawnIndex]) {
+    const ruby = createFish(rubySpawnX[rubySpawnIndex], GROUND_TOP - 10, 'ruby');
+    ruby.vx = 0;  // no horizontal movement
+    ruby.vy = 0;  // no vertical movement
+    creatures.push(ruby);
+    rubySpawnIndex++;
+  }
+
+  // ── Keyboard rod movement (continuous while held) ──
+  {
+    const p0 = players[0];
+    if (p0.stunTimer <= 0) {
+      if (keys['KeyA']) p0.rodX = Math.max(40,     p0.rodX - ROD_SPEED * dt);
+      if (keys['KeyD']) p0.rodX = Math.min(W - 40, p0.rodX + ROD_SPEED * dt);
+    }
+  }
+  if (game.mode === '2p') {
+    const p1 = players[1];
+    if (p1.stunTimer <= 0) {
+      if (keys['KeyJ']) p1.rodX = Math.max(40,     p1.rodX - ROD_SPEED * dt);
+      if (keys['KeyL']) p1.rodX = Math.min(W - 40, p1.rodX + ROD_SPEED * dt);
+    }
+  }
+
+  // ── AI update (1P mode) ──
+  if (game.mode === '1p') updateAI();
+
+  // Update
+  for (const p of players) {
+    if (p.stunTimer <= 0) updateHook(p);
+  }
+  for (const p of players) {
+    if (p.stunTimer > 0) p.stunTimer--;
+  }
+  updateCreatures();
+  updateCrabs();
+  checkCrabCutLines();
+
+  // Draw background
+  drawSky();
+  drawWater(totalFrames);
+
+  // Draw creatures (behind hooks)
+  for (const f of creatures) drawFishCreature(f);
+
+  // Draw crabs
+  for (const c of crabs) drawCrab(c);
+
+  // Draw rods & lines
+  for (const p of players) {
+    drawRod(p);
+    drawHook(p);
+  }
+
+  drawGround();
+
+  // Draw UI on top
+  drawUI();
+
+  // Combo flash
+  for (const p of players) {
+    if (p.caughtFish.length >= 3) {
+      const tx = p.idx === 0 ? W/4 : 3*W/4;
+      const flash = Math.floor(totalFrames / 8) % 2 === 0;
+      if (flash) {
+        drawPixelText('COMBO!', tx, 90, 3, C.yellow, 'center');
+      }
+    }
+  }
+}
+
+// ── Boot ──────────────────────────────────────────────────────
+resetGame();
+requestAnimationFrame(ts => {
+  lastTime = ts;
+  requestAnimationFrame(gameLoop);
+});
+</script>
 </body>
 </html>
