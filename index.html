@@ -199,42 +199,104 @@ const gpState = [
   { prev: Array(17).fill(false) },
 ];
 
-// ── Touch input ───────────────────────────────────────────────
-let touchState = { active: false, x: 0, startTime: 0 };
+// ── Touch input with virtual buttons ──────────────────────────
+let touchState = { left: false, right: false, fish: false };
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+// Virtual button positions (in game coordinates)
+const vButtons = {
+  left:  { x: 40,  y: H - 100, w: 100, h: 80 },
+  right: { x: 150, y: H - 100, w: 100, h: 80 },
+  fish:  { x: W - 140, y: H - 100, w: 120, h: 80 },
+};
+
+function getTouchPos(touch) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (touch.clientX - rect.left) * (W / rect.width),
+    y: (touch.clientY - rect.top) * (H / rect.height),
+  };
+}
+
+function isInButton(pos, btn) {
+  return pos.x >= btn.x && pos.x <= btn.x + btn.w &&
+         pos.y >= btn.y && pos.y <= btn.y + btn.h;
+}
+
+function updateTouchState(touches) {
+  touchState.left = false;
+  touchState.right = false;
+  let fishPressed = false;
+  for (let i = 0; i < touches.length; i++) {
+    const pos = getTouchPos(touches[i]);
+    if (isInButton(pos, vButtons.left)) touchState.left = true;
+    if (isInButton(pos, vButtons.right)) touchState.right = true;
+    if (isInButton(pos, vButtons.fish)) fishPressed = true;
+  }
+  return fishPressed;
+}
+
+let fishBtnWasPressed = false;
 
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
-  const touch = e.touches[0];
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = W / rect.width;
-  touchState.active = true;
-  touchState.x = (touch.clientX - rect.left) * scaleX;
-  touchState.startTime = performance.now();
-
   if (game.state === 'title') {
     startGame('1p');
-  } else if (game.state === 'result') {
-    resetGame();
+    return;
   }
+  if (game.state === 'result') {
+    resetGame();
+    return;
+  }
+  const fishPressed = updateTouchState(e.touches);
+  if (fishPressed && !fishBtnWasPressed && game.state === 'play') {
+    toggleHook(0);
+  }
+  fishBtnWasPressed = fishPressed;
 }, { passive: false });
 
 canvas.addEventListener('touchmove', e => {
   e.preventDefault();
-  const touch = e.touches[0];
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = W / rect.width;
-  touchState.x = (touch.clientX - rect.left) * scaleX;
+  const fishPressed = updateTouchState(e.touches);
+  if (fishPressed && !fishBtnWasPressed && game.state === 'play') {
+    toggleHook(0);
+  }
+  fishBtnWasPressed = fishPressed;
 }, { passive: false });
 
 canvas.addEventListener('touchend', e => {
   e.preventDefault();
-  const duration = performance.now() - touchState.startTime;
-  // Short tap = toggle hook
-  if (duration < 200 && game.state === 'play') {
-    toggleHook(0);
-  }
-  touchState.active = false;
+  const fishPressed = updateTouchState(e.touches);
+  fishBtnWasPressed = fishPressed;
 }, { passive: false });
+
+function drawVirtualButtons() {
+  if (!isMobile) return;
+
+  const alpha = 0.5;
+
+  // Left button
+  ctx.fillStyle = touchState.left ? 'rgba(100,200,255,0.7)' : `rgba(255,255,255,${alpha})`;
+  ctx.fillRect(vButtons.left.x, vButtons.left.y, vButtons.left.w, vButtons.left.h);
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(vButtons.left.x, vButtons.left.y, vButtons.left.w, vButtons.left.h);
+  drawPixelText('<', vButtons.left.x + 40, vButtons.left.y + 28, 3, '#000', 'center');
+
+  // Right button
+  ctx.fillStyle = touchState.right ? 'rgba(100,200,255,0.7)' : `rgba(255,255,255,${alpha})`;
+  ctx.fillRect(vButtons.right.x, vButtons.right.y, vButtons.right.w, vButtons.right.h);
+  ctx.strokeStyle = '#fff';
+  ctx.strokeRect(vButtons.right.x, vButtons.right.y, vButtons.right.w, vButtons.right.h);
+  drawPixelText('>', vButtons.right.x + 60, vButtons.right.y + 28, 3, '#000', 'center');
+
+  // Fish button
+  ctx.fillStyle = fishBtnWasPressed ? 'rgba(255,200,100,0.7)' : `rgba(255,150,50,${alpha})`;
+  ctx.fillRect(vButtons.fish.x, vButtons.fish.y, vButtons.fish.w, vButtons.fish.h);
+  ctx.strokeStyle = '#fff';
+  ctx.strokeRect(vButtons.fish.x, vButtons.fish.y, vButtons.fish.w, vButtons.fish.h);
+  drawPixelText('FISH', vButtons.fish.x + 60, vButtons.fish.y + 28, 2, '#000', 'center');
+}
 
 function pollGamepads() {
   const gps = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -501,6 +563,8 @@ const PFONT = {
   '-':['00000','00000','00000','11111','00000','00000','00000'],
   '/':['00001','00010','00010','00100','01000','01000','10000'],
   '.':['00000','00000','00000','00000','00000','00100','00100'],
+  '<':['00010','00100','01000','10000','01000','00100','00010'],
+  '>':['01000','00100','00010','00001','00010','00100','01000'],
 };
 
 function drawPixelText(text, x, y, scale=2, color='#fff', align='left') {
@@ -1475,12 +1539,11 @@ function gameLoop(ts) {
       if (keys['KeyA']) p0.rodX = Math.max(40,     p0.rodX - ROD_SPEED * dt);
       if (keys['KeyD']) p0.rodX = Math.min(W - 40, p0.rodX + ROD_SPEED * dt);
       // Touch movement (1P only)
-      if (touchState.active) {
-        if (touchState.x < W / 2) {
-          p0.rodX = Math.max(40, p0.rodX - ROD_SPEED * dt);
-        } else {
-          p0.rodX = Math.min(W - 40, p0.rodX + ROD_SPEED * dt);
-        }
+      if (touchState.left) {
+        p0.rodX = Math.max(40, p0.rodX - ROD_SPEED * dt);
+      }
+      if (touchState.right) {
+        p0.rodX = Math.min(W - 40, p0.rodX + ROD_SPEED * dt);
       }
     }
   }
@@ -1526,6 +1589,9 @@ function gameLoop(ts) {
 
   // Draw UI on top
   drawUI();
+
+  // Draw virtual buttons for mobile
+  drawVirtualButtons();
 
   // Combo flash
   for (const p of players) {
